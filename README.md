@@ -1,10 +1,22 @@
 # Meatball 的尋寶冒險 🐶🦴
 
+![Meatball 的尋寶冒險](assets/social-preview.jpg)
+
 白色金斑鬥牛犬 Meatball 的跳島尋寶小遊戲——單一 HTML 檔案、零相依套件，打開就能玩。
 
 ## 🎮 立即遊玩
 
-直接雙擊 `index.html`，或部署到 GitHub Pages 後用瀏覽器開啟。
+👉 **[點這裡直接開玩](https://riorio1996.github.io/meatball-adventure/)**，或下載後雙擊 `index.html`。
+
+## 📸 遊戲畫面
+
+| 🌋 岩漿小島 | 🍉 西瓜漂浮灣 |
+|:---:|:---:|
+| ![岩漿小島](assets/screenshot-level1.jpg) | ![西瓜漂浮灣](assets/screenshot-level2.jpg) |
+
+| 🍩 甜甜圈樂園 | 🏰 岩漿終點城堡 |
+|:---:|:---:|
+| ![甜甜圈樂園](assets/screenshot-level3.jpg) | ![岩漿終點城堡](assets/screenshot-level5.jpg) |
 
 ## 🗺️ 遊戲內容
 
