@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meatball 的尋寶冒險</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#70594c;color:#624b3b;font-family:system-ui,"Microsoft JhengHei",sans-serif}
+button{font:inherit;cursor:pointer;user-select:none;touch-action:manipulation}
+button:focus-visible,summary:focus-visible{outline:3px solid #e8aa45;outline-offset:3px}
+canvas{display:block}
+#game{width:100%;height:100%;touch-action:none}
+#hud{position:fixed;top:0;left:0;right:0;padding:max(9px,env(safe-area-inset-top)) 10px 18px;background:linear-gradient(#44352deb,#44352d90,transparent);color:#fff4df;pointer-events:none}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+h1{margin:0;font-size:clamp(13px,3.3vw,21px)}
+.tools{display:flex;gap:4px;pointer-events:auto}
+.tools button{background:#79634e;color:#fff4df;border:1px solid #ead3ab88;border-radius:9px;padding:8px 7px;font-size:11px}
+#stats{font-size:12px;line-height:1.9;margin-top:5px}
+.track{height:4px;background:#ffffff30;border-radius:4px;overflow:hidden}
+#bar{height:100%;background:#edce86;width:0}
+#storageStatus{display:none;margin-top:4px;font-size:10px;color:#ffe1a2}
+#toast{position:fixed;top:max(112px,calc(env(safe-area-inset-top) + 102px));left:50%;transform:translateX(-50%);width:max-content;max-width:92%;padding:9px 13px;background:#fff0ddf2;border:2px solid #705540;border-radius:12px;font-size:13px;text-align:center;pointer-events:none;opacity:0;transition:opacity .15s}
+#hint{position:fixed;left:13px;bottom:max(202px,calc(env(safe-area-inset-bottom) + 192px));max-width:90%;padding:5px 8px;background:#46362e9c;color:#fff2d9;border-radius:8px;font-size:11px;pointer-events:none;opacity:0;transition:opacity .15s}
+#mapPanel{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));width:120px;border:2px solid #ead3ab99;border-radius:14px;background:#44352de8;color:#fff4df;overflow:hidden;touch-action:none;user-select:none}
+#mapHeading{font-size:10px;line-height:23px;text-align:center}
+#minimap{width:116px;height:140px}
+#mapLegend{font-size:9px;text-align:center;line-height:18px;border-top:1px solid #ead3ab33}
+#context{position:fixed;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 18px));transform:translateX(-50%);max-width:calc(100% - 20px);padding:12px 16px;border:2px solid #6b503b;border-radius:14px;background:#fff0d4;color:#74543a;font-weight:800;display:none;white-space:nowrap;box-shadow:0 3px #604c3788}
+#overlay{position:fixed;inset:0;padding:max(15px,env(safe-area-inset-top)) max(15px,env(safe-area-inset-right)) max(15px,env(safe-area-inset-bottom)) max(15px,env(safe-area-inset-left));display:grid;place-items:center;background:#3d3033a6;backdrop-filter:blur(3px)}
+.card{width:min(560px,100%);max-height:100%;overflow:auto;overscroll-behavior:contain;padding:20px;border:3px solid #5c4739;border-radius:24px;background:linear-gradient(145deg,#fff5e6,#f3e0e5);text-align:center;box-shadow:0 7px #33282355}
+.card h2{font-size:24px;margin:8px 0 12px}
+.card h3{font-size:16px;margin:15px 0 8px}
+.card p{font-size:14px;line-height:1.8}
+.card button{padding:12px 15px;margin:5px;border:2px solid #68784e;border-radius:13px;background:#8da46c;color:#fff9eb;font-weight:750;box-shadow:0 3px #68784e}
+.card button.quiet{background:#fff7e9;color:#765d48;border-color:#c7ae91;box-shadow:0 3px #d4bea1}
+.card button.gold{background:#cfac62;border-color:#9b7a3f;box-shadow:0 3px #9b7a3f}
+.card input{width:min(280px,86%);padding:11px 13px;margin:4px auto;border:2px solid #c7ae91;border-radius:12px;background:#fffdf6;color:#624b3b;font:inherit;text-align:center;display:block}
+.card input:focus-visible{outline:3px solid #e8aa45;outline-offset:2px}
+.lbList{display:grid;gap:6px;margin:14px 0;text-align:left;font-size:13px}
+.lbRow{display:grid;grid-template-columns:34px 1fr auto;gap:1px 8px;align-items:center;padding:8px 11px;background:#fff8ec;border:1px solid #d9c3a6;border-radius:11px}
+.lbRow.me{border-color:#b08d3e;background:#ffeec9}
+.lbRank{font-weight:800;color:#a97f3a}
+.lbName{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbScore{font-weight:800;color:#6c7d50;white-space:nowrap}
+.lbSub{grid-column:2/4;font-size:11px;color:#92765f}
+.lbEmpty{padding:14px;color:#92765f;text-align:center}
+.small{font-size:12px!important;color:#92765f}
+.warning{padding:10px;border:1px solid #dab68d;border-radius:12px;background:#fff0d9}
+.levels{display:grid;gap:11px;margin:15px 0}
+.card button.level{margin:0;text-align:left;background:#fff8ec;color:#705541;border-color:#c9ae90;box-shadow:0 3px #dbc4a7}
+.level strong{display:block;font-size:16px;margin-bottom:5px}
+.level span{font-size:12px;font-weight:400;line-height:1.8}
+details{margin:15px 0;padding:11px;text-align:left;border:1px solid #d0b599;border-radius:12px;font-size:12px;line-height:1.9;background:#fff8ec}
+summary{cursor:pointer;font-weight:700}
+#portrait{width:150px;height:150px;margin:auto}
+.scene{width:100%;height:auto;border-radius:16px}
+.badges{display:flex;justify-content:center;gap:8px}
+.badge{width:36px;height:36px;display:grid;place-items:center;border:2px solid #a98a48;border-radius:50%;background:#e8c678}
+.badge.empty{background:#ddd0c5;border-color:#b9a491;color:#9a8674}
+.tutorial{display:grid;gap:10px;text-align:left;margin:18px 0}
+.tutorial div{padding:12px 14px;background:#fff8ec;border:1px solid #dbc5aa;border-radius:12px;font-size:14px;line-height:1.7}
+@media(max-width:390px){.tools button{padding:8px 5px;font-size:10px}.card{padding:17px 13px}#mapPanel{width:106px}#minimap{width:102px;height:134px}#mapLegend{font-size:8px}#context{font-size:12px;padding:11px}}
+@media(max-height:500px){#mapPanel{width:104px}#minimap{width:100px;height:95px}#hint{bottom:155px}.scene{max-height:185px;object-fit:contain}#portrait{width:90px;height:90px}.card{padding:13px}}
+@media(prefers-reduced-motion:reduce){#toast,#hint{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Meatball 尋寶冒險遊戲畫面"></canvas>
+<div id="hud">
+ <div class="row">
+  <h1 id="title">Meatball 的尋寶冒險</h1>
+  <div class="tools">
+   <button id="musicBtn" aria-pressed="false">音樂：關</button>
+   <button id="fxBtn" aria-pressed="false">音效：關</button>
+   <button id="pauseBtn">暫停</button>
+  </div>
+ </div>
+ <div id="stats"></div>
+ <div class="track"><div id="bar"></div></div>
+ <div id="storageStatus" role="status">無法永久儲存：目前僅保留本次遊玩進度</div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="hint"></div>
+<div id="mapPanel" aria-label="當關地圖，僅供查看，不提供傳送">
+ <div id="mapHeading">當關地圖</div>
+ <canvas id="minimap" aria-label="路線、角色、狗屋、未收集徽章與終點"></canvas>
+ <div id="mapLegend">● 你　◆ 徽章　■ 狗屋</div>
+</div>
+<button id="context"></button>
+<div id="overlay"></div>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const canvas=$("game"),c=canvas.getContext("2d");
+const mini=$("minimap"),mc=mini.getContext("2d");
+const INK="#292a24",CREAM="#fffef8",GOLD="#c3a247",GREEN="#84944c";
+/* 沿用舊版正式紀錄，測試功能已完全移除。 */
+const KEY="meatball-themed-adventure-v4";
+const reduced=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+const L=[
+ {name:"岩漿小島",icon:"🌋",count:44,bones:3,coins:20,rests:1,lava:true,bg:"#c97960",house:"火山石屋",tip:"點小島跳躍；落入岩漿扣一顆心。"},
+ {name:"西瓜漂浮灣",icon:"🍉",count:78,bones:3,coins:25,rests:2,lava:false,bg:"#7cb0b8",house:"西瓜小屋",tip:"水面可游泳，小心大範圍巡游、忽大忽小的榴槤。"},
+ {name:"甜甜圈樂園",icon:"🍩",count:110,bones:4,coins:30,rests:3,lava:false,bg:"#c898ae",house:"甜甜圈屋",tip:"尖刺大範圍巡游，糖漿漩渦會忽大忽小並減速。"},
+ {name:"熔岩木棧道",icon:"🪵",count:115,bones:4,coins:35,rests:3,lava:true,bg:"#b97650",house:"精緻小木屋",tip:"裂痕平台踩上兩秒後崩塌。"},
+ {name:"岩漿終點城堡",icon:"🏰",count:177,bones:5,coins:40,rests:4,lava:true,bg:"#ac6b62",house:"迷你城堡屋",tip:"收齊徽章，抵達石牆城堡。"}
+];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const number=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+const rng=seed=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+const cleanName=s=>String(s??"").replace(/[<>&"'`\\]/g,"").replace(/\s+/g," ").trim().slice(0,12);
+let W=600,H=900,cam={x:0,y:-600},mode="menu",stage=0,worldStage=0,clock=0,last=performance.now();
+let islands=[],main=[],items=[],hazards=[],particles=[],dog=null,run=null;
+let toastTime=0,hintTime=0,saveTime=0,mark=null,tap=null,contextAction=null,jumpBuffer=0;
+let storageOK=true,storageWarned=false,swimSoundTimer=0;
+let bounds={left:-1e9,right:1e9,top:-1e9,bottom:1e9};
+const keys=new Set();
+
+function fresh(){
+ return {version:4,best:Array(5).fill(0),cleared:Array(5).fill(false),collection:L.map(l=>Array(l.bones).fill(false)),current:null,guided:false,nickname:""};
+}
+function load(){
+ const p=fresh();
+ let raw;
+ try{raw=localStorage.getItem(KEY)}catch(e){storageOK=false;return p}
+ if(!raw)return p;
+ try{
+  const s=JSON.parse(raw);
+  if(s?.version===4){
+   L.forEach((l,i)=>{
+    p.best[i]=clamp(Math.floor(number(s.best?.[i])),0,l.coins*10);
+    p.cleared[i]=!!s.cleared?.[i];
+    p.collection[i]=p.collection[i].map((_,j)=>!!s.collection?.[i]?.[j]);
+   });
+   p.guided=!!s.guided;
+   p.nickname=cleanName(s.nickname);
+   if(s.current&&Number.isInteger(s.current.level)&&s.current.level>=0&&s.current.level<5&&Array.isArray(s.current.taken))p.current=s.current;
+  }
+ }catch(e){}
+ return p;
+}
+const profile=load();
+function storageUI(){
+ $("storageStatus").style.display=storageOK?"none":"block";
+ document.querySelectorAll("[data-storage-note]").forEach(el=>el.textContent=storageNote());
+}
+function storageNote(){
+ return storageOK?
+ "遊戲紀錄會自動儲存在此瀏覽器：進度、最高分、徽章與暱稱重開後仍會保留；清除瀏覽資料或換裝置則不會保留。":
+ "此環境無法永久儲存：目前僅保留本次遊玩進度，關閉或重新載入後可能遺失。";
+}
+function persist(){
+ try{localStorage.setItem(KEY,JSON.stringify(profile));storageOK=true}
+ catch(e){
+  storageOK=false;
+  if(!storageWarned){
+   storageWarned=true;
+   say("無法永久儲存，目前僅保留本次遊玩進度。",4);
+  }
+ }
+ storageUI();
+}
+function save(){
+ if(!run)return;
+ profile.current={
+  level:run.level,checkpoint:run.checkpoint,lives:run.lives,time:run.time,deaths:run.deaths,progress:run.progress,
+  taken:items.filter(i=>i.taken).map(i=>i.key),
+  visited:islands.filter(p=>p.station&&p.visited).map(p=>p.id)
+ };
+ persist();saveTime=0;
+}
+
+/* 榜單：線上版（Artifact）使用共享資料庫，所有玩家共用全球榜單；
+   以本機檔案開啟時，榜單儲存在此瀏覽器。 */
+const LKEY="meatball-local-board-v1";
+const hasRuntime=!!(window.claude&&typeof window.claude.use==="function");
+let LBdb=null,LBuid=null;
+const lbReady=(async()=>{
+ if(!hasRuntime)return false;
+ try{
+  const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+  if(db){LBdb=db;if(user)LBuid=await user.id()}
+ }catch(e){}
+ return !!LBdb;
+})();
+const totalScore=()=>profile.best.reduce((a,b)=>a+b,0);
+function boardEntry(v){
+ return {
+  name:cleanName(v?.name)||"匿名玩家",
+  total:clamp(Math.floor(number(v?.total)),0,1500),
+  cleared:clamp(Math.floor(number(v?.cleared)),0,5),
+  badges:clamp(Math.floor(number(v?.badges)),0,19),
+  t:number(v?.t)
+ };
+}
+function loadLocalBoard(){
+ try{
+  const a=JSON.parse(localStorage.getItem(LKEY)||"[]");
+  if(Array.isArray(a))return a.map(boardEntry).sort((x,y)=>y.total-x.total).slice(0,50);
+ }catch(e){}
+ return [];
+}
+function upsertLocal(entry){
+ const rows=loadLocalBoard().filter(r=>r.name!==entry.name);
+ rows.push(entry);rows.sort((x,y)=>y.total-x.total);
+ try{localStorage.setItem(LKEY,JSON.stringify(rows.slice(0,50)))}catch(e){}
+}
+async function submitScore(){
+ const entry=boardEntry({
+  name:profile.nickname,total:totalScore(),
+  cleared:profile.cleared.filter(Boolean).length,
+  badges:profile.collection.flat().filter(Boolean).length,t:Date.now()
+ });
+ upsertLocal(entry);
+ if(!await lbReady||!LBuid)return false;
+ try{await LBdb.doc("leaderboard/"+LBuid).set(entry);return true}
+ catch(e){return false}
+}
+async function fetchGlobal(){
+ if(!await lbReady)return null;
+ try{
+  const snap=await LBdb.collection("leaderboard").orderBy("total","desc").limit(50).get();
+  return snap.docs.filter(d=>d.exists).map(d=>boardEntry(d.data()));
+ }catch(e){return null}
+}
+function renderBoard(el,rows){
+ if(!el)return;
+ el.textContent="";
+ if(!rows.length){
+  const d=document.createElement("div");d.className="lbEmpty";
+  d.textContent="還沒有任何成績，完成一關就會上榜！";el.appendChild(d);return;
+ }
+ const medals=["🥇","🥈","🥉"];
+ rows.forEach((r,i)=>{
+  const row=document.createElement("div");
+  row.className="lbRow"+(profile.nickname&&r.name===profile.nickname?" me":"");
+  const rank=document.createElement("span");rank.className="lbRank";rank.textContent=medals[i]||String(i+1);
+  const name=document.createElement("span");name.className="lbName";name.textContent=r.name;
+  const score=document.createElement("span");score.className="lbScore";score.textContent=r.total+" 分";
+  const sub=document.createElement("span");sub.className="lbSub";
+  sub.textContent=`通關 ${r.cleared}／5　🦴 ${r.badges}／19`;
+  row.append(rank,name,score,sub);el.appendChild(row);
+ });
+}
+function leaderboard(){
+ mode="rank";dog=null;run=null;
+ showCard(`<h2>全球榜單 🏆</h2>
+ <p class="small">成績為五關最高分合計（滿分 1500），完成任一關卡後自動更新。</p>
+ <input id="nick" maxlength="12" placeholder="輸入你的暱稱（最多 12 字）" aria-label="暱稱">
+ <button id="saveNick">儲存暱稱並上傳成績</button>
+ <p class="small" id="lbNote"></p>
+ <div id="board" class="lbList"></div>
+ <button id="back" class="quiet">返回主選單</button>`);
+ $("nick").value=profile.nickname||"";
+ const note=t=>{const el=$("lbNote");if(el)el.textContent=t};
+ const showLocal=()=>{
+  if(mode!=="rank")return;
+  renderBoard($("board"),loadLocalBoard());
+  note(hasRuntime?"全球榜單連線中…以下先顯示本機榜單。":"目前為本機榜單（僅此瀏覽器）。開啟線上版才會與所有玩家共用全球榜單。");
+ };
+ const showGlobal=async()=>{
+  const rows=await fetchGlobal();
+  if(mode!=="rank")return;
+  if(rows){
+   renderBoard($("board"),rows);
+   note(LBuid?"全球榜單：與所有玩家共用，完成關卡後自動更新成績。":"全球榜單（唯讀）：請先登入才能上傳成績。");
+  }else showLocal();
+ };
+ showLocal();
+ lbReady.then(ok=>{if(ok)showGlobal()});
+ $("saveNick").onclick=async()=>{
+  const name=cleanName($("nick").value);
+  if(!name){note("請先輸入暱稱。");return}
+  profile.nickname=name;persist();
+  const btn=$("saveNick");btn.disabled=true;btn.textContent="上傳中…";
+  const uploaded=await submitScore();
+  if(mode!=="rank")return;
+  btn.disabled=false;btn.textContent="儲存暱稱並上傳成績";
+  if(uploaded){note("成績已上傳全球榜單 ✓");showGlobal()}
+  else{
+   showLocal();
+   note(hasRuntime?"已儲存到本機榜單；全球榜單需登入或暫時無法連線。":"已儲存到本機榜單 ✓（開啟線上版才會上傳全球榜單）");
+  }
+ };
+ $("back").onclick=menu;
+}
+function say(t,d=2){
+ $("toast").textContent=t;$("toast").style.opacity=1;toastTime=d;
+}
+function hint(key,t,advanced=false){
+ if(!run||run.hints.has(key)||(stage>=2&&!advanced))return;
+ run.hints.add(key);$("hint").textContent=t;$("hint").style.opacity=1;hintTime=2;
+}
+function clearHint(){hintTime=0;$("hint").style.opacity=0}
+const count=type=>items.filter(i=>i.type===type&&i.taken).length;
+const timeText=t=>Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0");
+
+/* 全部音訊由 Web Audio 即時合成，不使用外部資源。 */
+let audio=null,noise=null,musicOn=false,fxOn=false,nextNote=0,musicStep=0,musicTheme=-1;
+function initAudio(){
+ try{
+  audio ||= new(window.AudioContext||window.webkitAudioContext)();
+  audio.resume().catch(()=>{});
+  if(!noise){
+   noise=audio.createBuffer(1,Math.ceil(audio.sampleRate*.6),audio.sampleRate);
+   const a=noise.getChannelData(0);
+   for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;
+  }
+  nextNote=audio.currentTime+.02;return true;
+ }catch(e){say("此環境無法播放聲音。");return false}
+}
+function tone(f,t,d=.15,type="sine",vol=.025,end=0){
+ if(!audio||audio.state!=="running")return;
+ const o=audio.createOscillator(),g=audio.createGain();
+ o.type=type;o.frequency.setValueAtTime(f,t);
+ if(end)o.frequency.exponentialRampToValueAtTime(end,t+d);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);
+ g.gain.exponentialRampToValueAtTime(.0001,t+d);
+ o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+d+.02);
+ o.onended=()=>{o.disconnect();g.disconnect()};
+}
+/* 柔和樂音：緩起音、長收尾，專供背景音樂使用。 */
+function softTone(f,t,d,type="sine",vol=.012){
+ if(!audio||audio.state!=="running")return;
+ const o=audio.createOscillator(),g=audio.createGain();
+ o.type=type;o.frequency.setValueAtTime(f,t);
+ g.gain.setValueAtTime(.0001,t);
+ g.gain.linearRampToValueAtTime(vol,t+Math.min(.1,d*.3));
+ g.gain.exponentialRampToValueAtTime(.0001,t+d);
+ o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+d+.05);
+ o.onended=()=>{o.disconnect();g.disconnect()};
+}
+function hiss(t,d=.15,vol=.025,f=1700,end=600){
+ if(!audio||!noise||audio.state!=="running")return;
+ const n=audio.createBufferSource(),filter=audio.createBiquadFilter(),g=audio.createGain();
+ n.buffer=noise;filter.type="bandpass";filter.Q.value=.7;
+ filter.frequency.setValueAtTime(f,t);filter.frequency.exponentialRampToValueAtTime(end,t+d);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);
+ g.gain.exponentialRampToValueAtTime(.0001,t+d);
+ n.connect(filter);filter.connect(g);g.connect(audio.destination);n.start(t);n.stop(t+d);
+ n.onended=()=>{n.disconnect();filter.disconnect();g.disconnect()};
+}
+function fx(kind){
+ if(!fxOn||!audio||audio.state!=="running")return;
+ const t=audio.currentTime;
+ if(kind==="jump")tone(400,t,.12,"sine",.025,650);
+ if(kind==="double")tone(680,t,.12,"sine",.027,1000);
+ if(kind==="coin")tone(1120,t,.08,"sine",.024);
+ if(kind==="bone"||kind==="win")[660,830,990,1320].forEach((f,i)=>tone(f,t+i*.09,.18,"triangle",.025));
+ if(kind==="land")tone(stage===3?130:210,t,.07,"triangle",.016,80);
+ if(kind==="crack")hiss(t,.1,.025,1300,700);
+ if(kind==="house")[520,660,780].forEach((f,i)=>tone(f,t+i*.12,.18,"sine",.022));
+ if(kind==="splash"){
+  tone(155,t,.24,"sine",.023,68);hiss(t+.035,.28,.015,1250,420);
+  tone(370,t+.075,.12,"sine",.007,190);tone(460,t+.14,.10,"sine",.005,240);
+ }
+ if(kind==="swim"){
+  hiss(t,.22,.013,700,280);
+  tone(300+Math.random()*120,t+.05,.1,"sine",.004,150);
+ }
+ if(kind==="lava"){
+  tone(90,t,.5,"triangle",.055,30);
+  hiss(t,.7,.07,420,90);
+  hiss(t+.05,.5,.05,2600,900);
+  for(let i=0;i<5;i++)hiss(t+.08+i*.09,.06,.03,3200+i*300,1500);
+  tone(240,t+.03,.2,"sine",.02,60);
+ }
+ if(kind==="waterHit"){
+  tone(180,t,.12,"triangle",.05,55);
+  hiss(t,.08,.05,900,300);
+  hiss(t+.06,.35,.045,2800,500);
+  tone(420,t+.1,.15,"sine",.012,900);
+ }
+}
+/* 各關曲風：1 暖調散步、2/3 低音域悠閒渡假（搖擺律動）、4 柔木琴、5 古典宮廷、休息曲。 */
+const THEMES=[
+ [88,60,[0,4,7,9,7,4,2,4,0,7,9,12,9,7,4,2]],
+ [76,57,[0,4,7,4,2,0,-3,0,4,7,9,7,4,2,0,-3]],
+ [72,55,[0,4,7,9,7,4,0,2,4,2,0,-3,-5,-3,0,2]],
+ [90,57,[0,7,0,4,2,7,4,9,0,4,7,12,9,7,4,2]],
+ [64,55,[0,2,4,5,7,5,4,2,0,4,7,9,7,5,4,2]],
+ [56,60,[0,4,7,4,2,5,9,5,0,4,7,12,9,7,4,2]]
+];
+const hz=n=>440*2**((n-69)/12);
+function music(){
+ if(!musicOn||!audio||audio.state!=="running"||document.hidden)return;
+ const theme=["sleep","ending"].includes(mode)?5:stage;
+ const [bpm,root,mel]=THEMES[theme],now=audio.currentTime;
+ if(musicTheme!==theme){musicTheme=theme;musicStep=0;nextNote=now+.02}
+ if(nextNote<now-.15)nextNote=now+.02;
+ while(nextNote<now+.15){
+  const k=musicStep,t=nextNote,step=30/bpm;
+  /* 2/3 關：低八度＋慵懶搖擺；5 關：宮廷式長音與柔和三度。 */
+  const low=theme===1||theme===2,oct=low?0:12,dur=theme===4?step*2.8:step*2.3;
+  softTone(hz(root+oct+mel[k%mel.length]),t,dur,low?"sine":"triangle",theme===5?.008:low?.013:.011);
+  if(k%4===0)softTone(hz(root-12),t,step*4.6,"triangle",.008);
+  if(k%8===4)softTone(hz(root-5),t,step*4.6,"triangle",.006);
+  if((theme===0||theme===3)&&k%4===2)softTone(hz(root+24+mel[(k+3)%mel.length]),t+step*.5,step,"sine",.0045);
+  if(theme===4&&k%8===0)softTone(hz(root+4),t,step*3,"triangle",.004);
+  nextNote+=step*(low?(k%2?0.72:1.28):1);musicStep++;
+ }
+}
+function audioButton(id,kind){
+ $(id).onclick=()=>{
+  const was=kind==="music"?musicOn:fxOn,enabled=!was&&initAudio();
+  if(kind==="music")musicOn=enabled;else fxOn=enabled;
+  $(id).textContent=(kind==="music"?"音樂":"音效")+"："+(enabled?"開":"關");
+  $(id).setAttribute("aria-pressed",String(enabled));
+  if(enabled){musicTheme=-1;if(kind==="fx")fx("coin")}
+  if(!musicOn&&!fxOn&&audio)audio.suspend().catch(()=>{});
+ };
+}
+audioButton("musicBtn","music");audioButton("fxBtn","fx");
+function unlockAudio(){
+ if((musicOn||fxOn)&&audio&&audio.state==="suspended"){
+  audio.resume().then(()=>nextNote=audio.currentTime+.02).catch(()=>{});
+ }
+}
+function clearInput(){keys.clear();jumpBuffer=0;tap=null;swimSoundTimer=0}
+function anchor(){return H*.70}
+function resize(){
+ const ratio=innerWidth/Math.max(1,innerHeight);
+ H=Math.max(820,480/Math.max(.2,ratio));W=H*ratio;
+ const d=Math.min(devicePixelRatio||1,2);
+ canvas.width=Math.round(innerWidth*d);canvas.height=Math.round(innerHeight*d);
+ const r=mini.getBoundingClientRect();
+ mini.width=Math.max(1,Math.round(r.width*d));mini.height=Math.max(1,Math.round(r.height*d));
+ cam.x=dog?dog.x:0;cam.y=dog?dog.y-anchor():-H*.6;
+}
+function hit(p,x,y,pad=0){
+ return !p.gone&&((x-p.x)/(p.rx+pad))**2+((y-p.y)/(p.ry+pad))**2<=1;
+}
+function platform(x,y){
+ for(let i=islands.length-1;i>=0;i--)if(hit(islands[i],x,y))return islands[i];
+ return null;
+}
+/* 每關路線形狀不同：入門緩彎、蜿蜒河灣、圈圈甜圈路、木棧道折返、城垛方波。 */
+function routeX(index,n){
+ if(index===0)return Math.sin(n*.22)*80;
+ if(index===1)return Math.sin(n*.16)*260+Math.sin(n*.45)*40;
+ if(index===2)return Math.cos(n*.5)*140+Math.sin(n*.11)*200;
+ if(index===3){const seg=Math.floor(n/11),t=n%11;return (seg%2?240-t*48:t*48-240)+Math.sin(n*.7)*18}
+ return Math.tanh(Math.sin(n*.22)*3)*260+Math.sin(n*.9)*25;
+}
+function build(index){
+ worldStage=index;
+ const l=L[index],r=rng(59113+index*98417),rests=new Set();
+ islands=[];main=[];items=[];hazards=[];particles=[];clock=0;mark=null;saveTime=0;
+ for(let j=1;j<=l.rests;j++)rests.add(Math.round(l.count*j/(l.rests+1)));
+ let y=0;
+ for(let n=0;n<=l.count;n++){
+  if(n)y-=index>0&&n%12===8?250:142+(r()-.5)*12;
+  const x=routeX(index,n);
+  const station=n===0||rests.has(n),finish=n===l.count,wide=n%10===4&&!station&&!finish;
+  const moving=index>=1&&n>7&&n%13===0&&!station&&!finish&&!wide;
+  const fragile=index>=3&&n>8&&n%9===0&&!station&&!finish&&!moving&&!wide;
+  const bounce=index>=2&&n>8&&n<l.count-2&&n%17===0&&!station&&!moving&&!fragile;
+  const type=finish&&index===4?"castleStone":index===4?"wall":index===0?"meadow":station||finish?"grass":
+   index===1?"melon":index===2?"donut":"crate";
+  const p={
+   id:islands.length,node:n,x,y,bx:x,rx:station||finish?145:wide?107:72,ry:station||finish?96:wide?102:50,
+   station,finish,wide,moving,fragile,bounce,type,visited:n===0,phase:r()*6.28,
+   crack:-1,gone:false,next:null,branchTo:null,branch:false,step:0
+  };
+  islands.push(p);main.push(p);
+ }
+ main.forEach((p,i)=>{if(i<l.count)p.next=main[i+1].id});
+ for(let j=0;j<l.bones;j++){
+  let n=Math.round(l.count*(.16+j*.69/Math.max(1,l.bones-1)));
+  while(main[n].station||main[n].finish)n++;
+  let p=main[n];p.moving=p.fragile=p.bounce=false;
+  if(index>=2&&j%2===1){
+   /* 岔路離主線更遠；第四、五關岔路島較小、中途島有裂痕，更具挑戰。 */
+   const length=3+(index+j)%3,sign=j%4===1?1:-1,reach=240+index*45;let prev=p;
+   for(let k=0;k<length;k++){
+    const src=main[n+k],x=src.bx+sign*(reach+Math.sin((k+1)/(length+1)*Math.PI)*50);
+    const q={
+     id:islands.length,node:n+k,x,y:src.y-10,bx:x,rx:index>=3?66:76,ry:index>=3?47:53,
+     type:index===4?"wall":index===3?"crate":index===2?"donut":"grass",
+     station:false,finish:false,wide:false,moving:false,fragile:index>=3&&k<length-1,bounce:false,visited:false,
+     phase:k,crack:-1,gone:false,next:null,branchTo:null,branch:true,
+     from:prev.id,start:main[n].id,step:0
+    };
+    islands.push(q);
+    if(k===0)p.branchTo=q.id;else prev.next=q.id;
+    prev=q;
+   }
+   p=prev;p.next=main[n+length].id;p.returnId=p.next;
+  }
+  items.push({key:"b"+j,type:"bone",index:j,id:p.id,taken:false});
+ }
+ const used=new Set(),boneIds=new Set(items.filter(i=>i.type==="bone").map(i=>i.id));
+ for(let j=0;j<l.coins;j++){
+  let n=Math.round(2+j*(l.count-5)/(l.coins-1));
+  while(n<l.count-1&&(used.has(n)||main[n].station||boneIds.has(main[n].id)))n++;
+  used.add(n);items.push({key:"c"+j,type:"coin",id:main[n].id,taken:false});
+ }
+ if(!l.lava){
+  /* 障礙物數量較少、巡游範圍更大；部分榴槤與尖刺會忽大忽小。 */
+  for(let n=2;n<l.count-1;n+=3){
+   const a=main[n],b=main[n+1],center=(a.bx+b.bx)/2;
+   for(const side of [-1,1]){
+    for(let attempt=0;attempt<24;attempt++){
+     const type=index===1?"durian":(Math.floor(n/2)+(side===1?1:0))%3===0?"vortex":"candy";
+     const radius=type==="vortex"?43:24,amp=type==="vortex"?35:type==="candy"?70:60;
+     const x=center+side*(100+r()*230),hy=a.y-(a.y-b.y)*(.1+r()*.8);
+     const safe=!islands.some(p=>((x-p.bx)/(p.rx+(p.moving?63:0)+radius+amp+22))**2+
+      ((hy-p.y)/(p.ry+radius+(p.station?95:20)))**2<1);
+     if(!safe||hazards.some(h=>Math.hypot(h.bx-x,h.y-hy)<100))continue;
+     hazards.push({type,bx:x,x,y:hy,r:radius,amp,phase:r()*6.28,pulse:index===2?type==="vortex":type!=="vortex"&&hazards.length%2===0});break;
+    }
+   }
+  }
+ }
+ const lows=islands.map(p=>p.bx-(p.moving?63:0)-p.rx).concat(hazards.map(h=>h.bx-h.amp-h.r));
+ const highs=islands.map(p=>p.bx+(p.moving?63:0)+p.rx).concat(hazards.map(h=>h.bx+h.amp+h.r));
+ bounds={left:Math.min(...lows)-150,right:Math.max(...highs)+150,top:main[main.length-1].y-340,bottom:main[0].y+320};
+}
+function respawn(){
+ islands.forEach(p=>{p.crack=-1;p.gone=false});
+ const p=islands[run.checkpoint]||main[0];
+ dog={
+  x:p.x+40,y:p.y+28,z:0,vz:0,state:"land",support:p.id,jumps:0,face:4,dx:0,dy:-1,
+  auto:null,swimTo:null,dead:0,inv:1.5,walk:0,bounceWait:0,slow:false,doubleGlow:0
+ };
+ clearInput();mark=null;cam.x=dog.x;cam.y=dog.y-anchor();
+}
+function begin(index,resume=false){
+ stage=index;build(index);
+ run={level:index,checkpoint:0,lives:3,time:0,deaths:0,progress:0,hints:new Set()};
+ const s=resume?profile.current:null;
+ if(s&&s.level===index){
+  const alive=number(s.lives,3)>0;
+  run.checkpoint=alive&&islands[s.checkpoint]?.station?s.checkpoint:0;
+  run.lives=alive?clamp(Math.floor(number(s.lives,3)),1,3):3;
+  run.time=alive?clamp(number(s.time),0,864000):0;
+  run.deaths=alive?clamp(Math.floor(number(s.deaths)),0,100000):0;
+  run.progress=alive?clamp(number(s.progress),0,L[index].count):0;
+  const taken=new Set(alive?s.taken:[]);
+  items.forEach(i=>i.taken=taken.has(i.key));
+  (alive&&Array.isArray(s.visited)?s.visited:[]).forEach(id=>{if(islands[id]?.station)islands[id].visited=true});
+  islands[run.checkpoint].visited=true;
+ }
+ mode="playing";hideCard();respawn();save();
+ $("title").textContent=`${stage+1}．${L[stage].name}`;
+ musicTheme=-1;unlockAudio();last=performance.now();
+ if(!profile.guided)firstGuide();
+ else if(resume)say("從最近啟用的狗屋出發，已收集物品保留。",3);
+ else if(stage<2)hint("start","點小島跳躍 · 空中再點一下二段跳");
+}
+function showCard(html){
+ clearInput();clearHint();
+ $("overlay").innerHTML=`<section class="card" role="dialog" aria-modal="true" aria-label="冒險選單" tabindex="-1">${html}</section>`;
+ $("overlay").style.display="grid";$("mapPanel").style.visibility="hidden";$("context").style.display="none";
+ $("hud").inert=true;$("mapPanel").inert=true;$("context").inert=true;
+ $("overlay").querySelector(".card").focus({preventScroll:true});
+}
+function hideCard(){
+ $("overlay").style.display="none";$("mapPanel").style.visibility="visible";
+ $("hud").inert=false;$("mapPanel").inert=false;$("context").inert=false;
+ if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+}
+function firstGuide(){
+ mode="tutorial";
+ showCard(`<h2>準備出發！🐾</h2>
+ <div class="tutorial">
+  <div>① <strong>點小島跳躍</strong><br>直接點想去的小島，跳躍距離不限。</div>
+  <div>② <strong>空中再點一下二段跳</strong><br>每次跳躍限一次，目的地不變；觸發時會出現小氣圈。</div>
+  <div>③ <strong>進狗屋補滿生命</strong><br>站在狗屋小島上，點狗屋或「進狗屋」按鈕。</div>
+ </div>
+ <p class="small">續玩從最近啟用的狗屋出發，已收集金幣與徽章保留。<br>左下地圖僅供查看，五關都能自由選擇。</p>
+ <button id="guideGo">開始冒險</button>`);
+ $("guideGo").onclick=()=>{
+  profile.guided=true;persist();resumePlay();
+  hint("start","點小島跳躍 · 空中再點一下二段跳",true);
+ };
+}
+function help(){
+ return `<details><summary>操作與冒險規則</summary>
+ 點小島跳躍，距離不限。岸上點水面跳入水中，水中點水面游過去。<br>
+ 手機：空中再點一下遊戲畫面觸發二段跳，目的地不變；每次跳躍限一次。<br>
+ 方向鍵／WASD：移動。空白鍵：跳躍與二段跳。<br>
+ E：下一座島。Q：徽章岔路。F：進狗屋。P／Esc：暫停。<br>
+ 左下角為全關地圖，顯示角色、狗屋、未收集徽章與終點；不能點地圖傳送。<br>
+ 站在狗屋小島上，點狗屋或「進狗屋」即可入屋補滿生命。<br>
+ 游泳速度為走路的 70%。榴槤與尖刺扣一顆心，並提供 1.5 秒無敵時間；漩渦只減速。<br>
+ 榴槤與尖刺會大範圍來回巡游；第二關部分榴槤忽大忽小，第三關則是漩渦忽大忽小。<br>
+ 徽章與金幣不會出現在同一座島；第四、五關的徽章岔路離主線更遠，中途島還有裂痕。<br>
+ 每一關都有虛線標示的地圖邊界，游到或跳到邊界會被擋下。<br>
+ 岩漿扣一顆心並送回啟用的狗屋，不自動補血。生命用完，本關重來，永久收藏保留。<br>
+ 裂痕平台踩上兩秒後崩塌，踩上後第六秒恢復。移動平台會帶著角色一起移動。<br>
+ 彈跳平台跨過一座島，落到下下座島；必要收藏、狗屋與岔路入口不會被自動跳過。<br>
+ 收齊徽章並抵達終點即可通關。接近終點若缺少徽章，可按「返回未收集徽章處」直接返回。<br>
+ 續玩會從最近啟用的狗屋出發，保留已收集金幣、徽章、生命與時間；不保留離開時的位置。<br>
+ 五關全部開放；開始另一場冒險會取代續玩存檔，永久收藏與最高分保留。<br>
+ 完成任一關卡後，五關最高分合計會自動更新到榜單；在「全球榜單」頁可輸入或修改暱稱。<br>
+ 音樂與音效可分別開啟，全部由程式合成；每關有柔和主題音樂，游泳時有輕柔划水聲。<br>
+ 只有按暫停或 P／Esc 才進入暫停選單；切到背景不補算離開期間的時間與傷害。</details>`;
+}
+function menu(){
+ if(["playing","paused","sleep","tutorial"].includes(mode))save();
+ mode="menu";dog=null;run=null;stage=0;build(0);cam.x=0;cam.y=-H*.6;
+ clearHint();toastTime=0;$("toast").style.opacity=0;
+ $("title").textContent="Meatball 的尋寶冒險";
+ showCard(`<canvas id="portrait" width="300" height="300" aria-label="白色金斑鬥牛犬 Meatball"></canvas>
+ <h2>Meatball 的尋寶冒險</h2><p>五座奇妙島嶼，十九枚骨頭徽章。<br>背上背包，一起去尋寶！</p>
+ ${profile.current?`<button id="continue">繼續正式冒險</button><p class="small">${L[profile.current.level].name}｜從最近啟用的狗屋出發<br>已收集金幣與徽章保留</p>`:""}
+ <button id="choose">自由選擇關卡</button><button id="rank" class="quiet">🏆 全球榜單</button><button id="album" class="quiet">徽章收藏冊</button>${help()}
+ <p class="small ${storageOK?"":"warning"}" data-storage-note>${storageNote()}</p>`);
+ const p=$("portrait").getContext("2d");p.translate(150,241);drawDog(p,{face:4,walk:0},2.2);
+ if($("continue"))$("continue").onclick=()=>begin(profile.current.level,true);
+ $("choose").onclick=mapMenu;$("rank").onclick=leaderboard;$("album").onclick=album;storageUI();
+}
+function mapMenu(){
+ mode="menu";dog=null;run=null;
+ showCard(`<h2>五站尋寶地圖 🗺️</h2><p class="small">五關全部開放，選一站出發吧！</p>
+ <div class="levels">${L.map((l,i)=>`<button class="level" data-level="${i}">
+ <strong>${l.icon} ${i+1}．${l.name} ${profile.cleared[i]?"✓":""}</strong>
+ <span>最高分 ${profile.best[i]}／${l.coins*10}　收藏 ${profile.collection[i].filter(Boolean).length}／${l.bones}<br>${l.house}・${l.rests} 座途中狗屋</span></button>`).join("")}</div>
+ <button id="back" class="quiet">返回主選單</button>`);
+ document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>intro(Number(b.dataset.level)));
+ $("back").onclick=menu;
+}
+function intro(i){
+ mode="story";
+ showCard(`<div style="font-size:44px">${L[i].icon}</div><h2>${L[i].name}</h2><p>${L[i].tip}</p>
+ <p>收齊 ${L[i].bones} 枚骨頭徽章並抵達終點。</p>
+ ${profile.current?'<p class="small">從頭開始會取代正式續玩存檔；永久收藏及最高分保留。</p>':""}
+ ${profile.current?.level===i?'<button id="continue">繼續這一關</button><p class="small">從最近啟用的狗屋出發，已收集物品保留。</p>':""}
+ <button id="start">從頭開始</button><button id="back" class="quiet">返回地圖</button>`);
+ if($("continue"))$("continue").onclick=()=>begin(i,true);
+ $("start").onclick=()=>{
+  if(!profile.current){begin(i);return}
+  showCard(`<h2>開始新的冒險？</h2>
+   <p class="warning">將取代「${L[profile.current.level].name}」的續玩存檔。</p>
+   <p>永久收藏與最高分會保留。</p>
+   <button id="yes">開始 ${L[i].name}</button><button id="no" class="quiet">返回</button>`);
+  $("yes").onclick=()=>begin(i);$("no").onclick=()=>intro(i);
+ };
+ $("back").onclick=mapMenu;
+}
+function album(){
+ mode="album";dog=null;run=null;
+ showCard(`<h2>骨頭徽章收藏冊 🦴</h2><p>永久收藏 ${profile.collection.flat().filter(Boolean).length}／19</p>
+ ${L.map((l,i)=>`<h3>${l.icon} ${l.name}</h3><div class="badges">${profile.collection[i].map(v=>`<span class="badge ${v?"":"empty"}" style="${v?`background:${BONE_THEMES[i].disc};border-color:${BONE_THEMES[i].edge}`:""}" aria-label="${v?"已收藏":"未收藏"}">${v?"🦴":"?"}</span>`).join("")}</div>`).join("")}
+ <p class="small">永久收藏保留；重玩仍需收齊本關徽章。</p>
+ <p class="small" data-storage-note>${storageNote()}</p><button id="back">返回主選單</button>`);
+ $("back").onclick=menu;
+}
+function resumePlay(){
+ clearInput();mode="playing";hideCard();unlockAudio();last=performance.now();
+}
+function pause(){
+ if(mode!=="playing")return;
+ save();mode="paused";
+ showCard(`<h2>暫停冒險 ☕</h2><p>${L[stage].name}<br>徽章 ${count("bone")}／${L[stage].bones}　${count("coin")*10} 分　${timeText(run.time)}</p>
+ <p class="small">若離開後續玩，將從最近啟用的狗屋出發；已收集物品保留。</p>
+ <button id="resume">繼續冒險</button><button id="restart" class="gold">重玩本關</button><button id="home" class="quiet">主選單</button>
+ ${help()}<p class="small" data-storage-note>${storageNote()}</p>`);
+ $("resume").onclick=resumePlay;$("home").onclick=menu;
+ $("restart").onclick=()=>{
+  showCard(`<h2>重新開始這一關？</h2><p>本次收集與狗屋進度會重置。<br>永久收藏與最高分保留。</p>
+  <button id="yes">重新開始</button><button id="no" class="quiet">繼續原本冒險</button>`);
+  $("yes").onclick=()=>begin(stage);$("no").onclick=resumePlay;
+ };
+}
+function sleep(){
+ if(mode!=="playing"||dog.dead>0||dog.state!=="land")return;
+ const p=islands[dog.support];if(!p?.station)return;
+ p.visited=true;run.checkpoint=p.id;run.lives=3;save();mode="sleep";fx("house");
+ showCard(`<h2>${L[stage].house} 💤</h2><canvas id="room" class="scene" width="720" height="400"></canvas>
+ <p>生命補滿 ♥♥♥<br>睡飽再繼續冒險。</p><button id="wake">起床繼續冒險</button><button id="home" class="quiet">主選單</button>`);
+ drawRoom($("room").getContext("2d"),false);
+ $("wake").onclick=()=>{
+  Object.assign(dog,{x:p.x+40,y:p.y+28,z:0,vz:0,state:"land",support:p.id,jumps:0,auto:null,swimTo:null,bounceWait:0,inv:1.5,doubleGlow:0});
+  resumePlay();
+ };
+ $("home").onclick=menu;
+}
+function gameOver(){
+ mode="lost";
+ profile.current={level:stage,checkpoint:0,lives:3,time:0,deaths:0,progress:0,taken:[],visited:[0]};
+ persist();
+ showCard(`<h2>再試一次，Meatball 💛</h2><p>生命用完，本關從頭開始。<br>永久收藏與最高分不會消失。</p>
+ <button id="retry">重玩本關</button><button id="home" class="quiet">主選單</button>`);
+ $("retry").onclick=()=>begin(stage);$("home").onclick=menu;
+}
+function complete(){
+ mode="won";clearInput();
+ const l=L[stage],score=count("coin")*10;
+ profile.best[stage]=Math.max(profile.best[stage],score);
+ profile.cleared[stage]=true;profile.current=null;persist();fx("win");
+ submitScore();
+ showCard(`<h2>尋寶成功 🏆</h2><p>${l.name}<br>
+ 徽章 ${count("bone")}／${l.bones}　金幣 ${count("coin")}／${l.coins}<br>${score} 分　${timeText(run.time)}</p>
+ <p class="small">${storageOK?"通關及最高分已儲存。":"通關及最高分已在本次遊玩中保留，無法永久儲存。"}</p>
+ <p class="small">${profile.nickname?`榜單成績已以「${profile.nickname}」更新。`:"尚未設定暱稱，成績以「匿名玩家」列入榜單；可在全球榜單頁輸入暱稱。"}</p>
+ <button id="next">${stage===4?"帶著寶藏回家":"前往下一關"}</button>
+ <button id="map" class="gold">自由選擇關卡</button><button id="rank" class="quiet">🏆 全球榜單</button><button id="home" class="quiet">主選單</button>`);
+ $("next").onclick=()=>stage===4?ending():intro(stage+1);
+ $("map").onclick=mapMenu;$("rank").onclick=leaderboard;$("home").onclick=menu;
+}
+function ending(){
+ mode="ending";
+ showCard(`<h2>晚安，Meatball 🌙</h2><canvas id="room" class="scene" width="720" height="400"></canvas>
+ <p>背包放好，寶藏收好。<br>夢裡還有西瓜、甜甜圈與小小城堡。</p>
+ <p class="small">最高分合計 ${profile.best.reduce((a,b)=>a+b,0)}／1500</p>
+ <button id="album">打開收藏冊</button><button id="home" class="quiet">主選單</button>`);
+ drawRoom($("room").getContext("2d"),true);
+ $("album").onclick=album;$("home").onclick=menu;
+}
+function burst(x,y,color,n=8){
+ for(let i=0;i<(reduced?3:n);i++){
+  const a=Math.random()*Math.PI*2,s=20+Math.random()*60;
+  particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:.6,color});
+ }
+}
+function doubleFeedback(){
+ dog.doubleGlow=.38;
+ burst(dog.x,dog.y-dog.z-12,"#fff1bf",6);fx("double");
+ hint("doubleUsed","二段跳成功！落地後可再次使用。",true);
+}
+function facing(dx,dy){
+ const n=Math.hypot(dx,dy);if(n<.04)return;
+ dog.dx=dx/n;dog.dy=dy/n;
+ dog.face=(Math.round(Math.atan2(dx,-dy)/(Math.PI/4))+8)%8;
+}
+function activate(p){
+ if(!p.station||p.visited)return;
+ p.visited=true;run.checkpoint=p.id;save();fx("house");say("狗屋已啟用");
+ hint("house","點狗屋或「進狗屋」，一鍵休息補滿生命");
+}
+function collect(){
+ let changed=false;
+ for(const i of items){
+  const p=islands[i.id];
+  if(i.taken||p.gone||dog.z>85||Math.hypot(dog.x-p.x,dog.y-p.y)>43)continue;
+  i.taken=true;changed=true;burst(p.x,p.y,"#ffe1a0",i.type==="bone"?12:5);fx(i.type);
+  if(i.type==="bone"){
+   profile.collection[stage][i.index]=true;
+   say(`🦴 ${count("bone")}／${L[stage].bones}`);
+  }
+ }
+ if(changed)save();
+}
+function die(){
+ if(dog.dead>0||mode!=="playing")return;
+ dog.dead=.7;dog.auto=null;dog.swimTo=null;mark=null;
+ run.lives--;run.deaths++;clearInput();fx("lava");burst(dog.x,dog.y,"#ffc780",18);
+ if(run.lives>0){
+  save();say(stage<2?"落入岩漿！回狗屋休息可補血。":"岩漿傷害 −♥",2);
+ }
+}
+function waterHurt(h){
+ if(dog.inv>0||dog.dead>0)return;
+ run.lives--;run.deaths++;dog.inv=1.5;dog.swimTo=null;mark=null;
+ fx("waterHit");burst(dog.x,dog.y,"#dbf4ef",12);
+ if(run.lives<=0){gameOver();return}
+ const oldX=dog.x,oldY=dog.y;let found=false;
+ for(let radius=70;radius<=210&&!found;radius+=35){
+  for(let j=0;j<24;j++){
+   const a=j*Math.PI/12,x=oldX+Math.cos(a)*radius,y=oldY+Math.sin(a)*radius;
+   if(platform(x,y)||hazards.some(q=>q.type!=="vortex"&&Math.hypot(x-q.x,y-q.y)<q.r+38))continue;
+   dog.x=x;dog.y=y;found=true;break;
+  }
+ }
+ if(!found){
+  const available=islands.filter(p=>!p.gone);
+  const p=available.reduce((best,p)=>Math.hypot(p.x-oldX,p.y-oldY)<Math.hypot(best.x-oldX,best.y-oldY)?p:best,available[0]);
+  dog.x=p.x;dog.y=p.y;land(p);
+ }
+ dog.x=clamp(dog.x,bounds.left+25,bounds.right-25);dog.y=clamp(dog.y,bounds.top+25,bounds.bottom-25);
+ save();say((h.type==="durian"?"榴槤":"尖刺")+"傷害 −♥");
+}
+function bounceTarget(p){
+ const first=islands[p.next];if(!first)return null;
+ const important=items.some(i=>i.id===first.id&&!i.taken)||
+  first.station&&!first.visited||first.finish||
+  first.branchTo!==null&&items.some(i=>i.type==="bone"&&!i.taken&&islands[i.id].start===first.id);
+ return important?first:islands[first.next]||first;
+}
+function land(p){
+ Object.assign(dog,{z:0,vz:0,state:"land",support:p.id,jumps:0,swimTo:null,bounceWait:0,doubleGlow:0});
+ swimSoundTimer=0;run.progress=Math.max(run.progress,p.node);activate(p);
+ if(p.fragile&&p.crack<0){
+  p.crack=0;hint("fragile","裂痕平台：兩秒後崩塌，快跳走！",true);
+ }
+ if(p.moving)hint("moving","移動島會帶著你移動；點目的地跳過去。",true);
+ if(p.bounce&&p.next!==null){
+  dog.bounceWait=.35;hint("bounce","彈跳平台：直接跨到下下座島！",true);
+ }
+ burst(dog.x,dog.y,"#ffefd2",4);fx("land");
+}
+function touchSurface(){
+ const p=platform(dog.x,dog.y);
+ if(p){land(p);return}
+ if(L[stage].lava){die();return}
+ Object.assign(dog,{state:"swim",z:0,vz:0,support:null,jumps:0,bounceWait:0,doubleGlow:0});
+ swimSoundTimer=.3;fx("splash");burst(dog.x,dog.y,"#d7f4ef",12);
+ hint("swim","點水面游泳 · 點小島跳上岸 · 避開水面障礙");
+}
+function autoJump(x,y,p=null,bounce=false){
+ if(!p){x=clamp(x,bounds.left+25,bounds.right-25);y=clamp(y,bounds.top+25,bounds.bottom-25)}
+ const d=dog,dist=Math.hypot(x-d.x,y-d.y);
+ facing(x-d.x,y-d.y);
+ d.auto={
+  sx:d.x,sy:d.y,x,y,id:p?.id??null,ox:p?x-p.x:0,oy:p?y-p.y:0,
+  t:0,duration:clamp(dist/200,.65,1.9),height:bounce?145:100,boost:0
+ };
+ d.state="air";d.jumps=1;d.swimTo=null;d.bounceWait=0;d.doubleGlow=0;jumpBuffer=0;swimSoundTimer=0;
+ mark={x,y,id:p?.id??null,ox:p?x-p.x:0,oy:p?y-p.y:0,t:4};
+ fx("jump");
+}
+function requestJump(){
+ if(mode!=="playing"||!dog||dog.dead>0)return;
+ if(dog.state==="air"&&dog.jumps>=2)return;
+ jumpBuffer=.2;
+}
+function houseClicked(x,y){
+ if(dog.state!=="land")return false;
+ const p=islands[dog.support];
+ if(p?.station&&Math.abs(x-(p.x-25))<100&&y>p.y-125&&y<p.y+50){
+  sleep();return true;
+ }
+ return false;
+}
+function selectPoint(x,y){
+ if(mode!=="playing"||dog.dead>0)return;
+ if(dog.state==="air"){requestJump();return}
+ if(houseClicked(x,y))return;
+ const p=platform(x,y);
+ if(p){
+  let ox=x-p.x,oy=y-p.y,n=Math.hypot(ox/(p.rx*.55),oy/(p.ry*.55));
+  if(n>1){ox/=n;oy/=n}
+  autoJump(p.x+ox,p.y+oy,p);
+ }else if(dog.state==="swim"){
+  const tx=clamp(x,bounds.left+25,bounds.right-25),ty=clamp(y,bounds.top+25,bounds.bottom-25);
+  dog.swimTo={x:tx,y:ty};mark={x:tx,y:ty,id:null,t:30};facing(tx-dog.x,ty-dog.y);
+ }else autoJump(x,y);
+}
+function nextIsland(branch=false){
+ if(mode!=="playing"||dog.state!=="land"||dog.dead>0)return;
+ const p=islands[dog.support],id=branch?p.branchTo:p.next;
+ if(id===null)return;
+ const q=islands[id];autoJump(q.x,q.y,q);
+}
+function returnMissing(){
+ if(mode!=="playing"||dog.dead>0)return;
+ const i=items.find(i=>i.type==="bone"&&!i.taken);if(!i)return;
+ const target=islands[i.id],p=target.branch?islands[target.start]:target;
+ clearInput();p.gone=false;p.crack=-1;mark=null;
+ Object.assign(dog,{x:p.x,y:p.y+15,z:0,vz:0,state:"land",support:p.id,jumps:0,auto:null,swimTo:null,bounceWait:0,inv:1.5,doubleGlow:0});
+ cam.x=p.x;cam.y=p.y-anchor();collect();save();
+ say(target.branch?"已返回岔路入口，沿金色虛線尋找徽章。":"已返回未收集徽章的小島。");
+}
+function hazScale(h){return h.pulse?1+.45*Math.sin(clock*1.6+h.phase):1}
+function update(dt){
+ clock+=dt;run.time+=dt;saveTime+=dt;
+ if(mark&&(mark.t-=dt)<=0)mark=null;
+ particles=particles.filter(p=>(p.t-=dt)>0);
+ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt});
+ for(const p of islands){
+  const old=p.x;
+  if(p.moving)p.x=p.bx+Math.sin(clock*1.7+p.phase)*63;
+  p.step=p.x-old;
+  if(p.crack>=0){
+   const oldCrack=p.crack;p.crack+=dt;
+   if(Math.floor(oldCrack*3)!==Math.floor(p.crack*3)&&p.crack<2&&Math.hypot(p.x-dog.x,p.y-dog.y)<240)fx("crack");
+   if(p.crack>=2)p.gone=true;
+   if(p.crack>=6){p.gone=false;p.crack=-1}
+  }
+ }
+ hazards.forEach(h=>h.x=h.bx+Math.sin(clock*(h.type==="candy"?1.1:.5)+h.phase)*h.amp);
+ const d=dog;
+ if(d.dead>0){
+  d.dead-=dt;
+  if(d.dead<=0){if(run.lives<=0)gameOver();else respawn()}
+  return;
+ }
+ d.inv=Math.max(0,d.inv-dt);d.doubleGlow=Math.max(0,d.doubleGlow-dt);
+ d.slow=false;jumpBuffer=Math.max(0,jumpBuffer-dt);
+ let dx=(keys.has("ArrowRight")||keys.has("KeyD")?1:0)-(keys.has("ArrowLeft")||keys.has("KeyA")?1:0);
+ let dy=(keys.has("ArrowDown")||keys.has("KeyS")?1:0)-(keys.has("ArrowUp")||keys.has("KeyW")?1:0);
+ const n=Math.hypot(dx,dy);if(n>1){dx/=n;dy/=n}
+ if(d.state==="land"){
+  const p=islands[d.support];d.x+=p.step||0;
+  if(p.gone){touchSurface();if(d.dead>0)return}
+ }
+ if(d.state==="land"&&d.bounceWait>0){
+  d.bounceWait-=dt;
+  if(d.bounceWait<=0){
+   const p=bounceTarget(islands[d.support]);
+   if(p)autoJump(p.x,p.y,p,true);
+  }
+ }
+ let swimmingMoved=false;
+ if(d.auto){
+  const a=d.auto;
+  if(jumpBuffer>0&&d.jumps<2){
+   d.jumps=2;a.boost=45;jumpBuffer=0;doubleFeedback();
+  }
+  a.t+=dt;
+  const q=Math.min(1,a.t/a.duration),p=a.id===null?null:islands[a.id];
+  const x=p?p.x+a.ox:a.x,y=p?p.y+a.oy:a.y;
+  d.x=a.sx+(x-a.sx)*q;d.y=a.sy+(y-a.sy)*q;
+  d.z=Math.sin(q*Math.PI)*(a.height+a.boost);
+  if(q>=1){d.auto=null;mark=null;touchSurface();if(d.dead>0)return}
+ }else{
+  if(n>.1){d.swimTo=null;mark=null}
+  if(d.state==="swim"&&d.swimTo&&n<=.1){
+   const ax=d.swimTo.x-d.x,ay=d.swimTo.y-d.y,dist=Math.hypot(ax,ay);
+   if(dist<5){d.swimTo=null;mark=null}
+   else{dx=ax/dist;dy=ay/dist}
+  }
+  if(Math.hypot(dx,dy)>.04)facing(dx,dy);
+  if(jumpBuffer>0&&(d.state!=="air"||d.jumps<2)){
+   const first=d.state!=="air";
+   d.state="air";d.vz=first?350:330;d.z=Math.max(1,d.z);d.jumps=first?1:2;
+   d.swimTo=null;mark=null;d.bounceWait=0;jumpBuffer=0;
+   if(first){d.doubleGlow=0;fx("jump")}else doubleFeedback();
+  }
+  if(d.state==="swim")d.slow=hazards.some(h=>h.type==="vortex"&&Math.hypot(d.x-h.x,d.y-h.y)<h.r*hazScale(h)+12);
+  const speed=155*(d.state==="swim"?.7:1)*(d.slow?.45:1);
+  swimmingMoved=d.state==="swim"&&Math.hypot(dx,dy)>.04;
+  d.x+=dx*speed*dt;d.y+=dy*speed*dt;d.walk+=Math.hypot(dx,dy)*dt*12;
+  if(d.state==="air"){
+   d.vz-=620*dt;d.z+=d.vz*dt;
+   if(d.z<=0){touchSurface();if(d.dead>0)return}
+  }else{
+   const p=platform(d.x,d.y);
+   if(p){if(d.state!=="land"||d.support!==p.id)land(p);d.support=p.id}
+   else if(d.state==="land"){touchSurface();if(d.dead>0)return}
+  }
+ }
+ const bx2=clamp(d.x,bounds.left+10,bounds.right-10),by2=clamp(d.y,bounds.top+10,bounds.bottom-10);
+ if(bx2!==d.x||by2!==d.y){
+  d.x=bx2;d.y=by2;
+  if(d.state!=="air")hint("bound","已到地圖邊界，回到路線上吧！",true);
+ }
+ if(d.state==="swim"){
+  if(swimmingMoved){
+   swimSoundTimer-=dt;
+   if(swimSoundTimer<=0){fx("swim");swimSoundTimer=.42}
+  }else swimSoundTimer=0;
+  for(const h of hazards){
+   if(h.type!=="vortex"&&Math.hypot(d.x-h.x,d.y-h.y)<h.r*hazScale(h)+17){
+    waterHurt(h);if(mode!=="playing")return;break;
+   }
+  }
+ }else swimSoundTimer=0;
+ collect();
+ if(d.state==="land"){
+  const p=islands[d.support];activate(p);
+  if(p.fragile&&p.crack<0)p.crack=0;
+  if(p.finish&&count("bone")===L[stage].bones){complete();return}
+ }
+ cam.x+=(d.x-cam.x)*(1-Math.exp(-dt*5));
+ cam.y+=(d.y-anchor()-cam.y)*(1-Math.exp(-dt*7));
+ if(saveTime>5)save();
+}
+
+/* Canvas 繪圖工具。 */
+function oval(ctx,x,y,rx,ry,fill,stroke=INK,w=2){
+ ctx.beginPath();ctx.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);
+ ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.stroke()}
+}
+function box(ctx,x,y,w,h,r,fill,stroke=INK,lw=2){
+ r=Math.min(r,w/2,h/2);
+ ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+ ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+ ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
+}
+function line(ctx,points,color=INK,w=2){
+ ctx.beginPath();ctx.moveTo(...points[0]);points.slice(1).forEach(p=>ctx.lineTo(...p));
+ ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();
+}
+function poly(ctx,points,fill,stroke=INK,w=2){
+ ctx.beginPath();ctx.moveTo(...points[0]);points.slice(1).forEach(p=>ctx.lineTo(...p));ctx.closePath();
+ ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.stroke()}
+}
+function path(ctx,draw,fill,stroke=INK,w=2){
+ ctx.beginPath();draw(ctx);ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.lineJoin="round";ctx.lineCap="round";ctx.stroke()}
+}
+function text(ctx,t,x,y,size=12,color="#fff1d7"){
+ ctx.font=`700 ${size}px system-ui,"Microsoft JhengHei"`;ctx.textAlign="center";ctx.fillStyle=color;ctx.fillText(t,x,y);
+}
+/* 骨頭徽章：造型不變，配色對應關卡主題，並刻意與當關小島色系拉開對比。
+   1 熔岩黑曜石骨、2 西瓜紅徽奶油骨、3 巧克力徽薄荷糖霜骨、4 鐵件藍徽金骨、5 城堡紅旗象牙骨。 */
+const BONE_THEMES=[
+ {disc:"#eb6f33",edge:"#8f3c1c",bone:"#3a2f2b",knob:"#4e403a"},
+ {disc:"#cf4a4a",edge:"#7e2a2a",bone:"#fff3da",knob:"#fff8ec"},
+ {disc:"#6f4a35",edge:"#49301f",bone:"#9adbd0",knob:"#b8e8df"},
+ {disc:"#53657a",edge:"#33404f",bone:"#ffd98c",knob:"#ffe6ad"},
+ {disc:"#a64848",edge:"#6e2a2a",bone:"#f2e3c2",knob:"#f8edd6"}
+];
+function bone(ctx,x,y,s=1,theme=null){
+ const t=theme===null?{disc:"#e8c271",edge:"#97753b",bone:CREAM,knob:CREAM}:BONE_THEMES[theme];
+ ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+ oval(ctx,0,0,18,17,t.disc,t.edge,1.7);
+ line(ctx,[[-8,0],[8,0]],t.bone,6);
+ for(const a of [-1,1])for(const b of [-1,1])oval(ctx,a*9,b*3,3.6,3.6,t.knob,null);
+ if(theme===0)line(ctx,[[-5,0],[0,1.5],[5,0]],"#ff9c52",1.5);
+ else if(theme===1){oval(ctx,-3,0,1.3,1.8,"#2f2320",null);oval(ctx,3,-1,1.3,1.8,"#2f2320",null)}
+ else if(theme===2){oval(ctx,-4,-1,1.2,1.2,"#fff8ec",null);oval(ctx,1,1.5,1.2,1.2,"#f2d16b",null);oval(ctx,5,-1.5,1.2,1.2,"#e591b4",null)}
+ else if(theme===3){oval(ctx,-5,0,1.5,1.5,"#53657a",null);oval(ctx,5,0,1.5,1.5,"#53657a",null)}
+ else if(theme===4)line(ctx,[[-4,1],[-2,-2],[0,1],[2,-2],[4,1]],"#e8c271",1.3);
+ ctx.restore();
+}
+
+/* 角色：正面回復參考圖的短圓比例。
+   側面與背面保留原設計，只壓縮垂直比例；不改碰撞範圍。 */
+const DOG_INK="#292a24",DOG_WHITE="#fffef8",DOG_GOLD="#c3a247";
+const DOG_PINK="#f7e6e5",DOG_GREEN="#7a8c43",DOG_LINE=2.25;
+function pack(ctx,x,y,s=1){
+ ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+ box(ctx,-6,-23,12,8,4,DOG_GREEN,DOG_INK,2);
+ box(ctx,-17,-18,34,39,7,"#c8aa50",DOG_INK,2.2);
+ box(ctx,-17,-18,34,12,6,"#d2b65e",DOG_INK,2);
+ line(ctx,[[-14,-7],[14,-7]],"#eed894",1.7);
+ box(ctx,-2.7,-8,5.4,8,1.8,DOG_GREEN,null);
+ box(ctx,-13,4,26,14,5,DOG_GREEN,DOG_INK,2);
+ box(ctx,-10.5,6.5,21,9,3,"#91a260","#b7c58c",1.1);
+ ctx.restore();
+}
+function dogBody(ctx,step=0,back=false,withPack=true){
+ path(ctx,p=>{
+  p.moveTo(-27,-28);
+  p.bezierCurveTo(-36,-23,-34,-9,-26,-5);
+  p.bezierCurveTo(-20,5,20,5,26,-5);
+  p.bezierCurveTo(35,-10,36,-24,27,-29);
+ },DOG_WHITE,DOG_INK,DOG_LINE);
+ if(back){
+  path(ctx,p=>{
+   p.moveTo(24,-27);p.bezierCurveTo(34,-24,34,-14,28,-10);
+   p.bezierCurveTo(24,-12,22,-19,24,-27);
+  },DOG_GOLD,null);
+ }
+ if(withPack&&!back){
+  line(ctx,[[-21,-27],[-22,-8]],DOG_GREEN,4.2);
+  line(ctx,[[21,-27],[22,-8]],DOG_GREEN,4.2);
+ }
+ for(const x of [-22,22]){
+  ctx.save();ctx.translate(x,step*(x<0?1:-1));
+  path(ctx,p=>{
+   p.moveTo(-9,-11);p.bezierCurveTo(-10,-5,-15,0,-11,6);
+   p.bezierCurveTo(-7,10,7,10,11,6);
+   p.bezierCurveTo(14,1,9,-4,9,-11);
+  },DOG_WHITE,DOG_INK,2.1);
+  line(ctx,[[-4,3],[-4,8]],DOG_INK,1.6);
+  line(ctx,[[2,3],[2,8]],DOG_INK,1.6);
+  ctx.restore();
+ }
+ if(!back){
+  ctx.beginPath();ctx.moveTo(-15,-8);ctx.quadraticCurveTo(0,2,15,-8);
+  ctx.strokeStyle=DOG_INK;ctx.lineWidth=2;ctx.stroke();
+ }
+}
+function dogEars(ctx,back=false){
+ path(ctx,p=>{
+  p.moveTo(-22,-88);
+  p.bezierCurveTo(-32,-104,-45,-96,-53,-81);
+  p.bezierCurveTo(-58,-70,-52,-65,-43,-69);
+  p.bezierCurveTo(-35,-73,-31,-82,-22,-88);
+ },back?DOG_GOLD:DOG_WHITE,DOG_INK,DOG_LINE);
+ path(ctx,p=>{
+  p.moveTo(22,-88);
+  p.bezierCurveTo(31,-104,45,-95,53,-82);
+  p.bezierCurveTo(59,-72,53,-66,45,-69);
+  p.bezierCurveTo(36,-72,32,-83,22,-88);
+ },back?DOG_WHITE:DOG_GOLD,DOG_INK,DOG_LINE);
+}
+function frontHeadOutline(p){
+ p.moveTo(-32,-79);
+ p.bezierCurveTo(-28,-95,-10,-99,7,-96);
+ p.bezierCurveTo(26,-95,35,-86,37,-69);
+ p.bezierCurveTo(39,-54,44,-35,43,-23);
+ p.bezierCurveTo(42,-12,33,-9,25,-13);
+ p.bezierCurveTo(19,-16,21,-34,12,-38);
+ p.bezierCurveTo(6,-42,-6,-42,-12,-38);
+ p.bezierCurveTo(-21,-34,-19,-16,-25,-13);
+ p.bezierCurveTo(-33,-9,-42,-12,-43,-23);
+ p.bezierCurveTo(-44,-38,-38,-58,-35,-70);
+ p.bezierCurveTo(-34,-74,-34,-76,-32,-79);
+}
+function dogFront(ctx,sleeping=false){
+ dogEars(ctx,false);
+ path(ctx,frontHeadOutline,DOG_WHITE,DOG_INK,DOG_LINE);
+ path(ctx,p=>{
+  p.moveTo(-34,-78);
+  p.bezierCurveTo(-29,-86,-18,-86,-12,-80);
+  p.bezierCurveTo(-6,-75,-7,-65,-14,-60);
+  p.bezierCurveTo(-21,-56,-33,-60,-36,-67);
+  p.bezierCurveTo(-38,-72,-37,-75,-34,-78);
+ },DOG_GOLD,null);
+ path(ctx,p=>{
+  p.moveTo(-26,-46);
+  p.bezierCurveTo(-25,-58,-14,-61,0,-61);
+  p.bezierCurveTo(14,-61,25,-56,27,-44);
+  p.bezierCurveTo(29,-37,29,-28,24,-25);
+  p.bezierCurveTo(20,-23,17,-25,17,-31);
+  p.bezierCurveTo(17,-41,10,-45,0,-45);
+  p.bezierCurveTo(-10,-45,-17,-41,-17,-31);
+  p.bezierCurveTo(-17,-24,-22,-22,-26,-26);
+  p.bezierCurveTo(-29,-30,-28,-38,-26,-46);
+ },DOG_PINK,null);
+ if(sleeping){
+  line(ctx,[[-28,-71],[-24,-68],[-20,-71]],DOG_INK,1.9);
+  line(ctx,[[20,-70],[24,-67],[28,-70]],DOG_INK,1.9);
+ }else{
+  oval(ctx,-24,-71,2.8,3.2,DOG_INK,null);
+  oval(ctx,24,-70,2.8,3.2,DOG_INK,null);
+ }
+ ctx.beginPath();ctx.moveTo(-5,-79);ctx.quadraticCurveTo(0,-81,6,-79);
+ ctx.strokeStyle=DOG_INK;ctx.lineWidth=2.1;ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-18,-65);ctx.quadraticCurveTo(0,-74,18,-64);
+ ctx.strokeStyle=DOG_INK;ctx.lineWidth=2.25;ctx.stroke();
+ oval(ctx,0,-60,8.5,4.6,"#11120e",null);
+ line(ctx,[[-12,-49],[-5,-45],[5,-45],[12,-49]],DOG_INK,1.7);
+ for(let i=0;i<5;i++){
+  const x=-10+i*4;
+  poly(ctx,[[x,-49],[x+2,-45],[x+4,-49]],DOG_WHITE,DOG_INK,1.1);
+ }
+ poly(ctx,[[-13,-50],[-13,-45],[-9,-47]],DOG_WHITE,DOG_INK,1.3);
+ poly(ctx,[[9,-47],[13,-45],[13,-50]],DOG_WHITE,DOG_INK,1.3);
+}
+function dogBack(ctx,step,withPack=true){
+ dogBody(ctx,step,true,false);
+ dogEars(ctx,true);
+ path(ctx,p=>{
+  p.moveTo(-33,-79);
+  p.bezierCurveTo(-28,-94,-12,-99,3,-97);
+  p.bezierCurveTo(24,-98,35,-88,38,-70);
+  p.bezierCurveTo(42,-51,43,-33,38,-23);
+  p.bezierCurveTo(32,-14,16,-13,0,-14);
+  p.bezierCurveTo(-17,-13,-33,-15,-39,-24);
+  p.bezierCurveTo(-44,-35,-41,-61,-33,-79);
+ },DOG_WHITE,DOG_INK,DOG_LINE);
+ if(withPack){
+  line(ctx,[[-12,-30],[-11,-13]],DOG_GREEN,3.2);
+  line(ctx,[[12,-30],[11,-13]],DOG_GREEN,3.2);
+  pack(ctx,0,-15,.90);
+ }
+}
+function dogSideBody(ctx,right,step,withPack){
+ if(withPack){
+  box(ctx,-35,-31,9,28,4,"#c8aa50",DOG_INK,1.8);
+  box(ctx,-35,-12,5,9,2,DOG_GREEN,DOG_INK,1.1);
+ }
+ path(ctx,p=>{
+  p.moveTo(-27,-32);
+  p.bezierCurveTo(-39,-23,-34,-3,-17,0);
+  p.bezierCurveTo(-2,4,19,1,24,-10);
+  p.bezierCurveTo(28,-23,17,-32,5,-34);
+ },DOG_WHITE,DOG_INK,DOG_LINE);
+ if(right){
+  path(ctx,p=>{
+   p.moveTo(-29,-28);p.bezierCurveTo(-19,-33,-14,-24,-16,-15);
+   p.bezierCurveTo(-18,-7,-28,-7,-31,-14);
+   p.bezierCurveTo(-33,-20,-31,-24,-29,-28);
+  },DOG_GOLD,null);
+ }
+ for(const x of [-21,18]){
+  const lift=step*(x<0?1:-1);
+  box(ctx,x-8,-7+lift,16,16,7,DOG_WHITE,DOG_INK,2.1);
+ }
+}
+function dogSide(ctx,d,sleeping,right,withPack=true){
+ ctx.save();ctx.scale(right?1:-1,1);
+ const step=Math.sin(d.walk||0)*1.25;
+ dogSideBody(ctx,right,step,withPack);
+ if(right){
+  path(ctx,p=>{
+   p.moveTo(-20,-87);
+   p.bezierCurveTo(-13,-106,9,-102,21,-81);
+   p.bezierCurveTo(9,-91,-7,-94,-20,-87);
+  },DOG_WHITE,DOG_INK,DOG_LINE);
+ }else{
+  path(ctx,p=>{
+   p.moveTo(-23,-88);
+   p.bezierCurveTo(-16,-104,4,-104,17,-91);
+   p.bezierCurveTo(5,-96,-9,-95,-23,-88);
+  },DOG_GOLD,DOG_INK,DOG_LINE);
+ }
+ function sideOutline(p){
+  p.moveTo(-32,-63);
+  p.bezierCurveTo(-27,-87,-13,-96,3,-94);
+  p.bezierCurveTo(21,-92,29,-80,29,-64);
+  p.bezierCurveTo(29,-57,36,-55,42,-53);
+  p.bezierCurveTo(47,-52,47,-43,45,-36);
+  p.bezierCurveTo(43,-27,33,-24,28,-23);
+  p.bezierCurveTo(23,-15,16,-13,11,-19);
+  p.bezierCurveTo(4,-27,-8,-24,-21,-25);
+  p.bezierCurveTo(-33,-25,-39,-30,-36,-45);
+  p.bezierCurveTo(-35,-52,-34,-57,-32,-63);
+ }
+ path(ctx,sideOutline,DOG_WHITE,DOG_INK,DOG_LINE);
+ if(right){
+  path(ctx,p=>{
+   p.moveTo(6,-83);
+   p.bezierCurveTo(19,-86,28,-77,27,-65);
+   p.bezierCurveTo(25,-54,15,-50,6,-56);
+   p.bezierCurveTo(-4,-61,-4,-75,6,-83);
+  },DOG_GOLD,null);
+ }
+ path(ctx,p=>{
+  p.moveTo(17,-55);
+  p.bezierCurveTo(25,-60,30,-56,38,-54);
+  p.bezierCurveTo(46,-50,45,-36,36,-32);
+  p.bezierCurveTo(29,-28,25,-34,22,-42);
+  p.bezierCurveTo(20,-47,19,-51,17,-55);
+ },DOG_PINK,null);
+ if(sleeping)line(ctx,[[13,-71],[17,-68],[21,-71]],DOG_INK,1.9);
+ else oval(ctx,18,-70,2.8,3.2,DOG_INK,null);
+ ctx.beginPath();ctx.moveTo(10,-79);ctx.quadraticCurveTo(17,-83,23,-79);
+ ctx.strokeStyle=DOG_INK;ctx.lineWidth=2;ctx.stroke();
+ oval(ctx,41,-52,6.7,4.1,"#11120e",null);
+ poly(ctx,[[30,-42],[26,-36],[33,-36]],DOG_WHITE,DOG_INK,1.5);
+ ctx.restore();
+}
+function drawDog(ctx,d,s=1,sleeping=false,withPack=true){
+ ctx.save();ctx.scale(s,s);
+ ctx.lineCap="round";ctx.lineJoin="round";
+ const step=Math.sin(d.walk||0)*1.25;
+ const back=[0,1,7].includes(d.face),side=[2,6].includes(d.face);
+ if(side){
+  ctx.scale(1,.84);
+  dogSide(ctx,d,sleeping,d.face===2,withPack);
+ }else if(back){
+  ctx.scale(1,.84);
+  if(d.face===1||d.face===7)ctx.transform(.96,0,d.face===1?.055:-.055,1,0,0);
+  dogBack(ctx,step,withPack);
+ }else{
+  if(d.face===3||d.face===5)ctx.transform(.97,0,d.face===3?.045:-.045,1,0,0);
+  dogBody(ctx,step,false,withPack);
+  /* 僅補上頭身之間的白色銜接區，不加外框，不改原本比例。 */
+  oval(ctx,0,-30,20,18,DOG_WHITE,null);
+  ctx.save();
+  ctx.translate(0,-3);
+  ctx.scale(1,.82);
+  dogFront(ctx,sleeping);
+  ctx.restore();
+ }
+ ctx.restore();
+}
+
+/* 關卡、狗屋與場景沿用原本設計；第五關小島改為石砌城牆風。 */
+function house(ctx,x,y,visited,index=worldStage){
+ ctx.save();ctx.translate(x,y);
+ if(index===0){
+  oval(ctx,0,-23,56,56,"#aaa497","#756c5e",3);
+  poly(ctx,[[-57,-28],[-34,-66],[0,-77],[35,-66],[57,-28],[28,-37],[0,-30],[-29,-37]],"#a0b67a","#6c7d50");
+  for(const yy of [-13,6,25])line(ctx,[[-48,yy],[48,yy]],"#888073",1.5);
+ }else if(index===1){
+  oval(ctx,0,-23,61,57,"#94b766","#537444",3);
+  for(const xx of [-36,-14,14,36])line(ctx,[[xx,26],[xx*.6,-46]],"#608b47",7);
+  oval(ctx,0,27,60,10,"#dce5b0","#6b8e4b",2);
+ }else if(index===2){
+  oval(ctx,0,-24,65,58,"#d5aa79","#926b4b",3);
+  oval(ctx,0,-28,61,51,"#efb7cd","#b67b94",2);
+  for(let k=0;k<15;k++){
+   const a=k*2.4,x=Math.cos(a)*47,y=-28+Math.sin(a)*35;
+   line(ctx,[[x,y],[x+5,y-3]],["#fff2bc","#a7be85","#fff8ed"][k%3],3);
+  }
+ }else if(index===3){
+  /* 精緻木屋：立板牆、踢腳底座、三層疊瓦屋頂、圓窗 */
+  box(ctx,-52,-40,104,73,10,"#d7b084","#76563d",3);
+  for(const xx of [-36,-18,0,18,36])line(ctx,[[xx,-34],[xx,27]],"#c29a6c",2);
+  box(ctx,-52,22,104,11,5,"#b98c5e","#76563d",2);
+  poly(ctx,[[-62,-40],[0,-78],[62,-40]],"#8d6a4a","#5f4328",3);
+  for(const [w,yy] of [[52,-46],[40,-56],[27,-66]])line(ctx,[[-w,yy],[w,yy]],"#6d4f33",2.5);
+  oval(ctx,33,-16,9,9,"#ffe9b8","#76563d",2.3);
+  line(ctx,[[33,-24],[33,-8]],"#76563d",1.4);line(ctx,[[25,-16],[41,-16]],"#76563d",1.4);
+ }else{
+  box(ctx,-44,-44,88,77,5,"#d4c6af","#786654",3);
+  for(const xx of [-66,38]){
+   box(ctx,xx,-74,28,107,3,"#c5b79d","#786654",2);
+   for(let k=0;k<3;k++)box(ctx,xx+k*10,-83,7,13,1,"#c5b79d","#786654",1);
+   box(ctx,xx+9,-46,10,17,5,"#ebd69b","#786654",1);
+  }
+  line(ctx,[[0,-43],[0,-97]],"#80684e",3);
+  poly(ctx,[[0,-97],[34,-84],[0,-73]],"#94ae75","#617946",1.5);
+ }
+ box(ctx,-21,-18,42,51,20,"#665449","#5b493a",2);
+ oval(ctx,0,27,17,5,"#edd1be",null);bone(ctx,0,index===2?-62:-45,.43);
+ oval(ctx,35,7,7,8,visited?"#ffe7a3":"#af9e8b","#7c6248",1.5);
+ if(visited)oval(ctx,35,7,13,14,"#ffe4a72a",null);
+ ctx.restore();
+}
+function drawRoom(ctx,home){
+ const colors=[
+  ["#c9c2b4","#b49a7e"],["#e2ebd0","#a7ba7c"],["#f4dce7","#d8aeb7"],
+  ["#dec5a7","#bd966d"],["#dfd5bf","#b6a185"]
+ ];
+ ctx.fillStyle=colors[stage][0];ctx.fillRect(0,0,720,400);
+ for(let x=0;x<720;x+=80)line(ctx,[[x,0],[x,290]],"#806b5122",2);
+ box(ctx,40,35,145,145,stage===1||stage===2?65:12,home?"#56617b":"#93b9bb","#927557",4);
+ oval(ctx,138,77,24,24,home?"#fff0b9":"#ffe4a2",null);
+ if(home)oval(ctx,149,68,24,24,"#56617b",null);
+ line(ctx,[[113,39],[113,176]],"#927557",4);line(ctx,[[44,108],[181,108]],"#927557",4);
+ ctx.fillStyle=colors[stage][1];ctx.fillRect(0,290,720,110);
+ for(let x=0;x<800;x+=85)line(ctx,[[x,290],[x-55,400]],"#74523833",2);
+ box(ctx,235,185,385,165,40,"#ac876e","#735540",4);
+ box(ctx,249,201,355,128,36,stage===2?"#f0c4d7":"#d9c899","#a78c6d",3);
+ box(ctx,267,211,174,54,22,CREAM,"#c9b394",2);
+ ctx.save();ctx.translate(360,298);ctx.rotate(-.12);
+ drawDog(ctx,{face:4,walk:0},1.5,true,false);ctx.restore();
+ box(ctx,424,270,166,53,20,stage===2?"#f2d5df":"#c7d19c","#9ba66e",2);
+ pack(ctx,154,315,1.6);
+ oval(ctx,651,316,31,11,"#c9ddd5","#81978c",2);
+ if(stage===4||home){
+  box(ctx,584,184,103,64,8,"#b89959","#7d623d",3);
+  for(let i=0;i<3;i++)bone(ctx,605+i*29,211,.5);
+ }
+ text(ctx,"Z",464,176,26,"#8f7863");text(ctx,"z",491,145,20,"#8f7863");text(ctx,"z",515,119,15,"#8f7863");
+ box(ctx,257,43,337,49,10,"#fff1d7","#a78c68",2);
+ text(ctx,home?"歡迎回家，Meatball":L[stage].house,425,75,22,"#8c7056");
+}
+const sx=x=>x-cam.x+W/2,sy=y=>y-cam.y;
+function background(){
+ const l=L[worldStage];c.fillStyle=l.bg;c.fillRect(0,0,W,H);
+ const ox=cam.x-W/2,oy=cam.y;
+ for(let j=Math.floor(oy/85);j<(oy+H)/85+1;j++){
+  for(let i=Math.floor(ox/130);i<(ox+W)/130+1;i++){
+   const k=Math.abs(Math.sin(i*41+j*73));
+   const x=i*130-ox+k*25,y=j*85-oy+(reduced?0:Math.sin(clock+k*9)*3);
+   line(c,[[x,y],[x+30,y-2],[x+58,y+1]],l.lava?"#ffb28d88":worldStage===2?"#f2c9dd88":"#d4edeb88",3);
+   if(k>.9)oval(c,x+20,y+23,5,3,l.lava?"#ffd6a066":"#fff5e777",null);
+  }
+ }
+}
+function drawBounds(){
+ const l=sx(bounds.left),rr=sx(bounds.right),t=sy(bounds.top),b=sy(bounds.bottom);
+ if(l<=0&&rr>=W&&t<=0&&b>=H)return;
+ c.save();
+ c.fillStyle="#2e241f2e";
+ if(l>0)c.fillRect(0,0,Math.min(l,W),H);
+ if(rr<W)c.fillRect(Math.max(rr,0),0,W-Math.max(rr,0),H);
+ if(t>0)c.fillRect(0,0,W,Math.min(t,H));
+ if(b<H)c.fillRect(0,Math.max(b,0),W,H-Math.max(b,0));
+ c.setLineDash([16,11]);
+ c.strokeStyle="#ffe9bf66";c.lineWidth=3;
+ c.strokeRect(l,t,rr-l,b-t);
+ c.restore();
+}
+function route(a,b,branch=false){
+ if(Math.max(sy(a.y),sy(b.y))<-130||Math.min(sy(a.y),sy(b.y))>H+130)return;
+ c.save();c.setLineDash(branch?[5,7]:[3,12]);
+ line(c,[[sx(a.x),sy(a.y)],[sx(b.x),sy(b.y)]],branch?"#ffe2a8bb":"#fff1d533",branch?2.5:2);
+ c.restore();
+}
+function drawIsland(p){
+ const x=sx(p.x),y=sy(p.y),rx=p.rx,ry=p.ry;
+ if(y<-190||y>H+190)return;
+ if(p.gone){
+  c.save();c.setLineDash([4,6]);oval(c,x,y,rx,ry,"#ffffff08","#fff0d077",1.5);c.restore();return;
+ }
+ c.save();
+ if(p.crack>1.3&&!reduced)c.translate(Math.sin(clock*45)*1.7,0);
+ oval(c,x+7,y+24,rx+6,ry+2,"#392d3625",null);
+ oval(c,x,y+14,rx,ry,p.type==="castleStone"||p.type==="wall"?"#817c75":"#97734f","#40382f",2);
+ if(p.type==="castleStone"){
+  c.save();c.beginPath();c.ellipse(x,y+14,rx,ry,0,0,Math.PI*2);c.clip();
+  for(let row=0;row<4;row++)for(let col=-4;col<5;col++){
+   box(c,x+col*52+(row%2?26:0),y+row*17-7,49,15,2,"#9f9990","#69665f",1);
+  }
+  c.restore();oval(c,x,y,rx,ry,"#c5bfb2","#716d65",3);
+  c.save();c.beginPath();c.ellipse(x,y,rx-4,ry-4,0,0,Math.PI*2);c.clip();
+  for(let row=-3;row<4;row++)for(let col=-4;col<5;col++){
+   box(c,x+col*53+(row%2?26:0),y+row*27,50,24,3,["#c9c3b7","#beb8ac","#d3ccbf"][Math.abs(row+col)%3],"#a49d91",1);
+  }
+  c.restore();
+ }else if(p.type==="wall"){
+  c.save();c.beginPath();c.ellipse(x,y+14,rx,ry,0,0,Math.PI*2);c.clip();
+  for(let row=0;row<=Math.ceil((ry+14)/15);row++)for(let col=-Math.ceil(rx/38)-1;col<=Math.ceil(rx/38);col++){
+   box(c,x+col*38+(row%2?19:0),y+row*15-4,35,13,2,"#8b867e","#5e5a52",1);
+  }
+  c.restore();
+  oval(c,x,y,rx,ry,"#bcb6aa","#6b675f",2.5);
+  c.save();c.beginPath();c.ellipse(x,y,Math.max(1,rx-4),Math.max(1,ry-4),0,0,Math.PI*2);c.clip();
+  for(let row=-Math.ceil(ry/19);row<=Math.ceil(ry/19);row++)for(let col=-Math.ceil(rx/38)-1;col<=Math.ceil(rx/38);col++){
+   box(c,x+col*38+(row%2?19:0),y+row*19,35,16,3,["#c5bfb3","#b9b3a7","#cec8bb"][Math.abs(row+col)%3],"#a09a8e",1);
+  }
+  c.restore();
+  const mn=Math.max(7,Math.round(rx/14));
+  for(let k=0;k<=mn;k++){
+   const a=Math.PI+k/mn*Math.PI;
+   box(c,x+Math.cos(a)*(rx-5)-5,y+Math.sin(a)*(ry-3)-6,10,9,1.5,"#d0cabd","#6b675f",1.2);
+  }
+ }else if(p.type==="meadow"){
+  oval(c,x,y,rx,ry,"#afc18a","#697b4e",2);
+  c.save();c.beginPath();c.ellipse(x,y,Math.max(1,rx-5),Math.max(1,ry-5),0,0,Math.PI*2);c.clip();
+  for(let k=0;k<4;k++){
+   const a=p.phase+k*1.7;
+   oval(c,x+Math.sin(a)*rx*.5,y+Math.cos(a*1.4)*ry*.45,rx*.3,ry*.26,"#dcc394","#c9ab76",1.5);
+  }
+  for(let k=0;k<3;k++){
+   const a=p.phase*1.3+k*2.2;
+   oval(c,x+Math.cos(a)*rx*.55,y+Math.sin(a)*ry*.5,2.6,2,"#b89f72",null);
+  }
+  c.restore();
+  for(let k=0;k<6;k++){
+   const gx=x+Math.sin(k*2.7+p.phase)*rx*.7,gy=y+Math.cos(k*3.4+p.phase)*ry*.6;
+   line(c,[[gx-3,gy],[gx,gy-5],[gx+3,gy]],"#829961",1.5);
+  }
+ }else if(p.type==="grass"){
+  oval(c,x,y,rx,ry,"#afc18a","#697b4e",2);
+  for(let k=0;k<7;k++){
+   const gx=x+Math.sin(k*3+p.phase)*rx*.73,gy=y+Math.cos(k*4+p.phase)*ry*.65;
+   line(c,[[gx-3,gy],[gx,gy-5],[gx+3,gy]],"#829961",1.5);
+  }
+ }else if(p.type==="melon"){
+  oval(c,x,y,rx,ry,"#7d9a54","#54713d",2);
+  oval(c,x,y-2,rx-7,ry-5,"#e7dfb1",null);
+  oval(c,x,y-3,rx-12,ry-10,"#eda6a4",null);
+  for(let k=0;k<8;k++)oval(c,x+Math.cos(k*.84)*(rx-26),y-3+Math.sin(k*.84)*(ry-22),2,3,"#67503c",null);
+ }else if(p.type==="donut"){
+  oval(c,x,y,rx,ry,"#dfb982","#896747",2);
+  oval(c,x,y-3,rx-4,ry-5,"#edb8ca",null);oval(c,x,y,13,10,"#b18560","#a77850",1);
+  for(let k=0;k<15;k++){
+   const px=x+Math.cos(k*2.4)*rx*.68,py=y+Math.sin(k*2.4)*ry*.67;
+   line(c,[[px,py],[px+4,py-2]],["#fff0c3","#a2b880","#fff9ed"][k%3],2.5);
+  }
+ }else if(p.type==="crate"){
+  /* 精緻木平台：整齊棧板、內圈飾邊、木釘 */
+  oval(c,x,y,rx,ry,"#d3a977","#775a3d",2);
+  c.save();c.beginPath();c.ellipse(x,y,Math.max(1,rx-6),Math.max(1,ry-6),0,0,Math.PI*2);c.clip();
+  for(let row=-Math.ceil(ry/13);row<=Math.ceil(ry/13);row++){
+   line(c,[[x-rx,y+row*13],[x+rx,y+row*13]],"#b98c5e",1.4);
+   if(row%2===0)line(c,[[x+(row%4===0?16:-20),y+row*13-6.5],[x+(row%4===0?16:-20),y+row*13+6.5]],"#b98c5e",1.2);
+  }
+  c.restore();
+  c.beginPath();c.ellipse(x,y,Math.max(1,rx-6),Math.max(1,ry-6),0,0,Math.PI*2);
+  c.strokeStyle="#8a6442";c.lineWidth=2;c.stroke();
+  for(const a of [.8,2.4,4,5.5])oval(c,x+Math.cos(a)*(rx-14),y+Math.sin(a)*(ry-12),2.3,2.3,"#8a6442","#5f4328",1);
+ }else{
+  oval(c,x,y,rx,ry,"#beb8c2","#7c737f",2);
+  line(c,[[x-rx*.5,y-ry*.35],[x-rx*.15,y-ry*.5]],"#eee3ea",3);
+ }
+ if(p.fragile){
+  line(c,[[x-9,y-24],[x+2,y-9],[x-6,y],[x+8,y+14],[x+2,y+27]],"#77563f",2.5);
+  if(p.crack>=0){
+   const t=Math.max(0,2-p.crack);
+   text(c,t.toFixed(1)+"s",x,y+ry+17,12);
+   line(c,[[x-22,y+ry+24],[x-22+44*t/2,y+ry+24]],"#ffe5a8",3);
+  }
+ }
+ if(p.moving)text(c,"↔",x,y+ry+18,16);
+ if(p.bounce){
+  oval(c,x,y,26,17,"#ffe4a0","#aa8753",2);text(c,"↑↑",x,y+6,18,"#94713e");
+ }
+ if(p.station){
+  house(c,x-25,y-12,p.visited);
+  oval(c,x+84,y+23,18,8,"#d0e0d3","#839785",1.5);
+  text(c,(p.visited?"✓ ":"")+L[worldStage].house,x,y+ry+22,12);
+ }
+ if(p.branchTo!==null){
+  const sign=islands[p.branchTo].x>p.x?1:-1,px=x+sign*rx*.7;
+  line(c,[[px,y+16],[px,y-20]],"#896b46",3);
+  box(c,px-31,y-25,62,24,6,"#ffe4a4","#9a7745",1.5);
+  text(c,sign>0?"🦴 →":"← 🦴",px,y-8,12,"#7e5d3c");
+ }
+ if(p.finish){
+  if(worldStage===4)house(c,x,y-8,true,4);
+  else{
+   line(c,[[x+10,y+8],[x+10,y-80]],"#766049",4);
+   poly(c,[[x+11,y-80],[x+65,y-64],[x+11,y-46]],"#e3bf72","#9f7e43",2);
+   bone(c,x+31,y-64,.4);
+  }
+  text(c,worldStage===4?"城堡出口":"本關終點",x,y+ry+23,14);
+ }
+ c.restore();
+}
+function drawHazard(h){
+ const x=sx(h.x),y=sy(h.y);if(y<-90||y>H+90)return;
+ c.save();c.translate(x,y);
+ const ps=hazScale(h);if(ps!==1)c.scale(ps,ps);
+ if(h.type==="vortex"){
+  oval(c,0,0,48,30,"#a66b9644",null);c.beginPath();
+  for(let k=0;k<100;k++){
+   const a=k*.14+(reduced?0:clock*.8),r=2+k*.42;
+   const x=Math.cos(a)*r,y=Math.sin(a)*r*.6;
+   if(k)c.lineTo(x,y);else c.moveTo(x,y);
+  }
+  c.strokeStyle="#f8d8e8cc";c.lineWidth=3;c.stroke();
+ }else{
+  oval(c,0,13,31,10,"#f1f3d844",null);
+  const points=[],n=h.type==="durian"?28:16;
+  for(let k=0;k<n;k++){
+   const a=k*Math.PI*2/n,r=k%2?(h.type==="durian"?23:16):31;
+   points.push([Math.cos(a)*r,Math.sin(a)*r*.85-4]);
+  }
+  poly(c,points,h.type==="durian"?"#a6b861":"#f0d198",h.type==="durian"?"#596e36":"#a37453",2);
+  if(h.type==="durian"){
+   oval(c,0,-4,20,17,"#c0cb7b",null);
+   for(let k=0;k<9;k++){
+    const px=Math.sin(k*2.3)*16,py=-4+Math.cos(k*2.1)*11;
+    poly(c,[[px-3,py+3],[px,py-4],[px+3,py+3]],"#789046","#596e36",1);
+   }
+   line(c,[[3,-29],[8,-37]],"#826a3c",5);
+  }else{
+   oval(c,0,-4,17,17,"#edaec8","#ae7892",2);
+   line(c,[[-9,-12],[9,6]],"#fff1d8",5);
+   line(c,[[-10,0],[1,11]],"#fff1d8",4);
+  }
+ }
+ c.restore();
+}
+function drawMini(){
+ if(mode!=="playing"||!dog)return;
+ const r=mini.getBoundingClientRect(),w=r.width,h=r.height;
+ if(!w||!h)return;
+ const d=Math.min(devicePixelRatio||1,2),pw=Math.round(w*d),ph=Math.round(h*d);
+ if(mini.width!==pw||mini.height!==ph){mini.width=pw;mini.height=ph}
+ mc.setTransform(mini.width/w,0,0,mini.height/h,0,0);mc.clearRect(0,0,w,h);
+ const left=Math.min(...islands.map(p=>p.bx-(p.moving?63:0)))-30;
+ const right=Math.max(...islands.map(p=>p.bx+(p.moving?63:0)))+30;
+ const top=main[main.length-1].y,bottom=main[0].y;
+ const mx=x=>10+(x-left)/Math.max(1,right-left)*(w-20);
+ const my=y=>10+(y-top)/Math.max(1,bottom-top)*(h-20);
+ mc.save();mc.beginPath();mc.rect(3,3,w-6,h-6);mc.clip();
+ for(let i=0;i<main.length-1;i++){
+  line(mc,[[mx(main[i].x),my(main[i].y)],[mx(main[i+1].x),my(main[i+1].y)]],"#b3c499",1.1);
+ }
+ mc.setLineDash([2,2]);
+ for(const p of islands)if(p.branch){
+  const a=islands[p.from];
+  line(mc,[[mx(a.x),my(a.y)],[mx(p.x),my(p.y)]],"#e4c379",1.3);
+  if(p.returnId!==undefined){
+   const b=islands[p.returnId];
+   line(mc,[[mx(p.x),my(p.y)],[mx(b.x),my(b.y)]],"#e4c379",1.3);
+  }
+ }
+ mc.setLineDash([]);
+ for(const p of islands)if(p.station){
+  box(mc,mx(p.x)-3,my(p.y)-3,6,6,1,p.visited?"#b5d58f":"#b9a890","#44352d",.7);
+ }
+ for(const i of items)if(i.type==="bone"&&!i.taken){
+  const p=islands[i.id],x=mx(p.x),y=my(p.y);
+  poly(mc,[[x,y-4],[x+4,y],[x,y+4],[x-4,y]],BONE_THEMES[worldStage].disc,"#fff3da",.7);
+ }
+ const finish=main[main.length-1],fx=mx(finish.x),fy=my(finish.y);
+ line(mc,[[fx,fy+3],[fx,fy-5]],"#fff5df",1.5);
+ poly(mc,[[fx,fy-5],[fx+6,fy-3],[fx,fy-1]],"#efb6cc",null);
+ const x=clamp(mx(dog.x),6,w-6),y=clamp(my(dog.y),6,h-6);
+ oval(mc,x,y,5,5,"#ffffff28",null);
+ oval(mc,x,y,3.2,3.2,"#fffaf0","#df9362",1.5);
+ mc.restore();
+ $("mapHeading").textContent=`${stage+1}．${L[stage].name}`;
+}
+function context(){
+ contextAction=null;
+ if(mode==="playing"&&dog&&dog.dead<=0){
+  const p=islands[dog.support];
+  if(dog.state==="land"&&p?.station){
+   contextAction=sleep;$("context").textContent="🏠 進狗屋 · 補滿生命";
+  }else if(dog.y<main[main.length-1].y+240&&count("bone")<L[stage].bones){
+   contextAction=returnMissing;$("context").textContent="🦴 返回未收集徽章處";
+  }
+ }
+ $("context").style.display=contextAction?"block":"none";
+ if(contextAction){
+  const r=$("mapPanel").getBoundingClientRect();
+  $("context").style.bottom=Math.max(24,innerHeight-r.top+12)+"px";
+ }
+}
+function draw(){
+ c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);background();drawBounds();
+ for(let i=0;i<main.length-1;i++)route(main[i],main[i+1]);
+ for(const p of islands)if(p.branch){
+  route(islands[p.from],p,true);
+  if(p.returnId!==undefined)route(p,islands[p.returnId],true);
+ }
+ hazards.forEach(drawHazard);
+ islands.filter(p=>sy(p.y)>-200&&sy(p.y)<H+190).sort((a,b)=>a.y-b.y).forEach(drawIsland);
+ for(const i of items){
+  if(i.taken)continue;
+  const p=islands[i.id],x=sx(p.x),y=sy(p.y)-19+(reduced?0:Math.sin(clock*3+p.id)*3);
+  if(p.gone||y<-50||y>H+50)continue;
+  if(i.type==="bone"){
+   oval(c,x,y,24,21,"#fff8e52e","#fff8e5",2);
+   bone(c,x,y,1,worldStage);
+  }else{
+   oval(c,x,y,9,12,"#f2d793","#ac8744",1.8);
+   line(c,[[x,y-6],[x,y+6]],"#ba944a",2);
+  }
+ }
+ if(mark){
+  const p=mark.id===null?null:islands[mark.id];
+  const x=sx(p?p.x+mark.ox:mark.x),y=sy(p?p.y+mark.oy:mark.y);
+  oval(c,x,y,18,11,"#fff0b522","#ffedbd",2.5);
+ }
+ if(dog&&dog.dead<=0){
+  const x=sx(dog.x),y=sy(dog.y);
+  c.save();
+  if(dog.inv>0&&!reduced)c.globalAlpha=.6+Math.sin(clock*24)*.2;
+  if(dog.state==="swim"){
+   oval(c,x,y,38,13,"#d8efee33","#e5f3dfaa",2);
+   c.save();c.beginPath();c.rect(x-90,y-160,180,142);c.clip();
+   c.translate(x,y+10+(reduced?0:Math.sin(clock*4)*2));
+   drawDog(c,dog,.9);c.restore();
+   line(c,[[x-28,y-5],[x-7,y-3],[x+16,y-6],[x+30,y-4]],"#e0f2e6cc",2);
+   if(dog.slow)oval(c,x,y,40,16,"#dfb4d222","#ffd1e6aa",2);
+  }else{
+   oval(c,x+5,y+10,32,11,"#40342833",null);
+   if(dog.doubleGlow>0){
+    const t=dog.doubleGlow/.38;
+    c.save();c.globalAlpha=t;
+    const radius=reduced?34:28+(1-t)*26;
+    oval(c,x,y-dog.z+5,radius,radius*.34,"#fff2c322","#fff5cd",3);
+    text(c,"✦",x-37,y-dog.z-23,16,"#fff4c5");
+    text(c,"✦",x+38,y-dog.z-13,12,"#fff4c5");
+    c.restore();
+   }
+   c.save();c.translate(x,y-dog.z);drawDog(c,dog,.9);c.restore();
+  }
+  c.restore();
+ }
+ for(const p of particles){
+  c.globalAlpha=Math.max(0,p.t/.6);
+  oval(c,sx(p.x),sy(p.y)-8,3,3,p.color,null);
+ }
+ c.globalAlpha=1;
+ if(run&&dog){
+  const life=clamp(run.lives,0,3),l=L[run.level];
+  $("stats").textContent=`${"♥".repeat(life)}${"♡".repeat(3-life)}　🦴 ${count("bone")}/${l.bones}　金幣 ${count("coin")}　${count("coin")*10} 分　${timeText(run.time)}`;
+  $("bar").style.width=run.progress/l.count*100+"%";
+ }else{
+  $("stats").textContent=`五關自由選擇　永久徽章 ${profile.collection.flat().filter(Boolean).length}／19`;
+  $("bar").style.width=profile.cleared.filter(Boolean).length/5*100+"%";
+ }
+ drawMini();context();
+}
+
+/* 觸控：點目的地，空中再點一下二段跳。 */
+function point(e){
+ const r=canvas.getBoundingClientRect();
+ return {x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H};
+}
+canvas.addEventListener("pointerdown",e=>{
+ if(mode!=="playing"||e.button!==0||tap||dog.dead>0)return;
+ e.preventDefault();unlockAudio();
+ const p=point(e),worldX=p.x+cam.x-W/2,worldY=p.y+cam.y;
+ const target=platform(worldX,worldY);
+ tap={
+  id:e.pointerId,x:e.clientX,y:e.clientY,wx:worldX,wy:worldY,
+  wasAir:dog.state==="air",targetId:target?.id??null,
+  ox:target?worldX-target.x:0,oy:target?worldY-target.y:0
+ };
+ try{canvas.setPointerCapture(e.pointerId)}catch(e){}
+});
+canvas.addEventListener("pointerup",e=>{
+ if(!tap||tap.id!==e.pointerId)return;
+ const t=tap;tap=null;
+ if(Math.hypot(e.clientX-t.x,e.clientY-t.y)>=18||mode!=="playing")return;
+ if(t.wasAir){
+  if(dog.state==="air")requestJump();
+  return;
+ }
+ if(dog.state==="air"){requestJump();return}
+ const p=t.targetId===null?null:islands[t.targetId];
+ selectPoint(p?p.x+t.ox:t.wx,p?p.y+t.oy:t.wy);
+});
+["pointercancel","lostpointercapture"].forEach(n=>canvas.addEventListener(n,()=>tap=null));
+$("mapPanel").addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation()});
+$("mapPanel").addEventListener("pointerup",e=>{e.preventDefault();e.stopPropagation()});
+$("mapPanel").addEventListener("click",e=>{e.preventDefault();e.stopPropagation()});
+$("pauseBtn").onclick=pause;
+$("context").onclick=()=>{unlockAudio();if(contextAction)contextAction()};
+const handled=new Set(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","Space","KeyP","Escape","KeyE","KeyQ","KeyF"]);
+addEventListener("keydown",e=>{
+ if($("overlay").style.display!=="none"){
+  if(e.code==="Tab"){
+   const els=[...$("overlay").querySelectorAll("button,summary,input")],a=document.activeElement;
+   if(e.shiftKey&&(a===els[0]||!els.includes(a))){
+    e.preventDefault();els[els.length-1]?.focus();
+   }else if(!e.shiftKey&&(a===els[els.length-1]||!els.includes(a))){
+    e.preventDefault();els[0]?.focus();
+   }
+  }
+  if(e.code==="Escape"&&!e.repeat&&mode==="paused"){
+   e.preventDefault();resumePlay();
+  }
+  return;
+ }
+ if(mode!=="playing"||!handled.has(e.code))return;
+ if(e.code==="Space"&&e.target instanceof HTMLButtonElement)return;
+ e.preventDefault();unlockAudio();
+ if(e.code==="KeyP"||e.code==="Escape"){if(!e.repeat)pause();return}
+ if(e.code==="KeyF"){if(!e.repeat)sleep();return}
+ if(e.code==="KeyE"){if(!e.repeat)nextIsland();return}
+ if(e.code==="KeyQ"){if(!e.repeat)nextIsland(true);return}
+ keys.add(e.code);
+ if(e.code==="Space"&&!e.repeat)requestJump();
+});
+addEventListener("keyup",e=>keys.delete(e.code));
+addEventListener("resize",resize);
+
+/* 失焦清除輸入；背景停止模擬，回來不補算傷害或時間。 */
+addEventListener("blur",()=>clearInput());
+document.addEventListener("visibilitychange",()=>{
+ clearInput();last=performance.now();
+ if(document.hidden){
+  if(["playing","paused","sleep","tutorial"].includes(mode))save();
+  if(audio)audio.suspend().catch(()=>{});
+ }else if((musicOn||fxOn)&&audio){
+  audio.resume().then(()=>nextNote=audio.currentTime+.02).catch(()=>{});
+ }
+});
+addEventListener("pagehide",()=>{
+ if(["playing","paused","sleep","tutorial"].includes(mode))save();else persist();
+});
+function frame(now){
+ const dt=document.hidden?0:clamp((now-last)/1000,0,.05);last=now;
+ if(toastTime>0&&(toastTime-=dt)<=0)$("toast").style.opacity=0;
+ if(hintTime>0&&(hintTime-=dt)<=0)$("hint").style.opacity=0;
+ if(!document.hidden){
+  if(mode==="playing"&&dt>0){
+   const steps=Math.max(1,Math.ceil(dt*120));
+   for(let i=0;i<steps&&mode==="playing";i++)update(dt/steps);
+  }else if(mode==="menu"||mode==="story")clock+=dt;
+  music();draw();
+ }
+ requestAnimationFrame(frame);
+}
+resize();persist();menu();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
